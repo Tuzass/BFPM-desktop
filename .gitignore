@@ -1,0 +1,11 @@
+src/Domain/obj
+src/Domain/bin
+src/Infrastructure/obj
+src/Infrastructure/bin
+src/BFPM/obj
+src/BFPM/bin
+src/Services/obj
+src/Services/bin
+tests/Tests/obj
+tests/Tests/bin
+*.db
