@@ -1,6 +1,6 @@
 namespace Domain.Enums;
 
-public enum TaskStatus
+public enum TaskItemStatus
 {
     Todo,
     InProgress,
