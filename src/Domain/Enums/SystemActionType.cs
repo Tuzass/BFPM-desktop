@@ -3,7 +3,7 @@ namespace Domain.Enums;
 public enum SystemActionType
 {
     LogActivity,
-    SendEmail,
+    SendNotification,
     CreateEntity,
     DeleteEntity,
     UploadProject,
