@@ -19,7 +19,7 @@ public class User
 
     private static bool IsUsernameValid(string username)
     {
-        if (username.Length >= 3 && username.Length <= 50)
+        if (username.Length >= 3 && username.Length <= 20)
         {
             return true;
         }
