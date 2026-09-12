@@ -1,5 +1,3 @@
-using Microsoft.VisualBasic.FileIO;
-
 namespace Infrastructure.Entities;
 
 public class LogEntry
@@ -8,7 +6,6 @@ public class LogEntry
     public int? UserID {get; private set;}
     public int? ProjectID {get; private set;}
     public string Content {get; private set;} = null!;
-    public bool Deleted {get; private set;}
     public DateTime CreatedAt {get; private set;}
 
     private LogEntry()
@@ -22,12 +19,6 @@ public class LogEntry
         UserID = userID;
         ProjectID = projectID;
         Content = content;
-        Deleted = false;
         CreatedAt = DateTime.UtcNow;
-    }
-
-    public void Delete()
-    {
-        Deleted = true;
     }
 }
