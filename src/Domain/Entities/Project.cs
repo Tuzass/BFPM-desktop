@@ -9,6 +9,8 @@ public class Project
     public string Name {get; private set;} = null!;
     public string Description {get; private set;} = null!;
     public ProjectStatus Status {get; private set;}
+    public bool IsLocal {get; private set;}
+    public bool EnableLocalNotifications {get; set;}
     public DateTime CreatedAt {get; private set;}
     public DateTime? CompletedAt {get; private set;}
 
@@ -19,13 +21,15 @@ public class Project
         
     }
 
-    public Project(int id, int ownerID, string name, string description, ProjectStatus status, DateTime? createdAt, DateTime? completedAt)
+    public Project(int id, int ownerID, string name, string description, ProjectStatus status, bool isLocal, DateTime? createdAt, DateTime? completedAt)
     {
         ID = id;
         OwnerID = ownerID;
         Name = name;
         Description = description;
         Status = status;
+        IsLocal = isLocal;
+        EnableLocalNotifications = true;
         CreatedAt = (createdAt == null) ? DateTime.UtcNow : (DateTime)createdAt;
         CompletedAt = completedAt;
     }
