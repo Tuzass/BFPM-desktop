@@ -1,10 +1,12 @@
+using Infrastructure.Enums;
+
 namespace Infrastructure.Entities;
 
 public class LogEntry
 {
     public int ID {get; private set;}
-    public int? UserID {get; private set;}
-    public int? ProjectID {get; private set;}
+    public DomainEntityType EntityType {get; private set;}
+    public int EntityID {get; private set;}
     public string Content {get; private set;} = null!;
     public DateTime CreatedAt {get; private set;}
 
@@ -13,11 +15,11 @@ public class LogEntry
         
     }
 
-    public LogEntry(int id, int? userID, int? projectID, string content)
+    public LogEntry(int id, DomainEntityType entityType, int entityID, string content)
     {
         ID = id;
-        UserID = userID;
-        ProjectID = projectID;
+        EntityType = entityType;
+        EntityID = entityID;
         Content = content;
         CreatedAt = DateTime.UtcNow;
     }
