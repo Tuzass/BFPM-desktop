@@ -5,8 +5,8 @@ namespace Infrastructure.Entities;
 public class Notification
 {
     public int ID {get; private set;}
-    public DomainEntityType? EntityType {get; private set;}
-    public int? EntityID {get; private set;}
+    public DomainEntityType EntityType {get; private set;}
+    public int EntityID {get; private set;}
     public string Content {get; private set;} = null!;
     public bool Deleted {get; private set;}
     public DateTime CreatedAt {get; private set;}
@@ -16,7 +16,7 @@ public class Notification
         
     }
 
-    public Notification(int id, DomainEntityType? entityType, int? entityID, string content)
+    public Notification(int id, DomainEntityType entityType, int entityID, string content)
     {
         ID = id;
         EntityType = entityType;
