@@ -6,7 +6,7 @@ public class AppDbContextFactory
 {
     static private string GetDatabasePath()
     {
-        string dbFileName = "bfpm.db";
+        string dbFileName = "data.db";
         string appFolder = "BFPM";
         string localApplicationDirectory = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
