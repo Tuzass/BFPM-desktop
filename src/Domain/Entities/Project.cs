@@ -6,6 +6,7 @@ public class Project
 {
     public int ID {get; private set;}
     public int OwnerID {get; private set;}
+    public int? AssignedUserID {get; private set;}
     public string Name {get; private set;} = null!;
     public string Description {get; private set;} = null!;
     public ProjectStatus Status {get; private set;}
