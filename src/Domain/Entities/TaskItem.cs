@@ -13,15 +13,14 @@ public class TaskItem
     public DateTime? DueDate {get; private set;}
     public DateTime CreatedAt {get; private set;}
     public DateTime? CompletedAt {get; private set;}
-
-    public const int MaxDescriptionLength = 500;
+    public int Version {get; private set;}
 
     private TaskItem()
     {
         
     }
 
-    public TaskItem(int projectID, string name, string description, TaskItemStatus status, TaskItemPriority priority, DateTime? dueDate, DateTime? createdAt, DateTime? completedAt)
+    public TaskItem(int projectID, string name, string description, TaskItemStatus status, TaskItemPriority priority, DateTime? dueDate, DateTime? createdAt, DateTime? completedAt, int? version = null)
     {
         ProjectID = projectID;
         Name = name;
@@ -31,6 +30,21 @@ public class TaskItem
         DueDate = dueDate;
         CreatedAt = (createdAt == null) ? DateTime.UtcNow : (DateTime)createdAt;
         CompletedAt = completedAt;
+
+        if (version is null)
+        {
+            Version = 1;
+        }
+
+        else
+        {
+            Version = version.Value;
+        }
+    }
+
+    public void IncreaseVersion()
+    {
+        Version++;
     }
 
     public bool ChangeStatus(TaskItemStatus newStatus)

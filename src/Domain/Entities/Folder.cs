@@ -6,18 +6,32 @@ public class Folder
     public int? OwnerID {get; private set;}
     public string Name {get; set;} = null!;
     public string Description {get; set;} = null!;
-
-    private const int MaxDescriptionLength = 500;
+    public int Version {get; private set;}
 
     private Folder()
     {
         
     }
 
-    public Folder(int ownerID, string name, string description)
+    public Folder(int ownerID, string name, string description, int? version = null)
     {
         OwnerID = ownerID;
         Name = name;
         Description = description;
+
+        if (version is null)
+        {
+            Version = 1;
+        }
+
+        else
+        {
+            Version = version.Value;
+        }
+    }
+
+    public void IncreaseVersion()
+    {
+        Version++;
     }
 }

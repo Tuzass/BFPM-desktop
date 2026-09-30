@@ -6,7 +6,7 @@ public class Project
 {
     public int ID {get; private set;}
     public int OwnerID {get; private set;}
-    public int? AssignedUserID {get; private set;}
+    public int AssignedUserID {get; private set;}
     public string Name {get; set;} = null!;
     public string Description {get; set;} = null!;
     public ProjectStatus Status {get; private set;}
@@ -14,18 +14,17 @@ public class Project
     public bool EnableLocalNotifications {get; set;}
     public DateTime CreatedAt {get; private set;}
     public DateTime? CompletedAt {get; private set;}
-
-    private const int MaxDescriptionLength = 500;
+    public int Version {get; private set;}
 
     private Project()
     {
         
     }
 
-    public Project(int ownerID, string name, string description, ProjectStatus status, bool isLocal, DateTime? createdAt, DateTime? completedAt)
+    public Project(int ownerID, int assignedUserID, string name, string description, ProjectStatus status, bool isLocal, DateTime? createdAt, DateTime? completedAt, int? version = null)
     {
-
         OwnerID = ownerID;
+        AssignedUserID = assignedUserID;
         Name = name;
         Description = description;
         Status = status;
@@ -33,6 +32,21 @@ public class Project
         EnableLocalNotifications = true;
         CreatedAt = (createdAt == null) ? DateTime.UtcNow : (DateTime)createdAt;
         CompletedAt = completedAt;
+
+        if (version is null)
+        {
+            Version = 1;
+        }
+
+        else
+        {
+            Version = version.Value;
+        }
+    }
+
+    public void IncreaseVersion()
+    {
+        Version++;
     }
 
     public bool ChangeStatus(ProjectStatus newStatus)
