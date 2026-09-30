@@ -21,9 +21,8 @@ public class LocalChange
         
     }
 
-    public LocalChange(int id, DomainEntityType targetType, int targetID, string? name, string? description, DomainEntityStatus? status, TaskItemPriority? priority, DateTime? dueDate)
+    public LocalChange(DomainEntityType targetType, int targetID, string? name, string? description, DomainEntityStatus? status, TaskItemPriority? priority, DateTime? dueDate)
     {
-        ID = id;
         TargetType = targetType;
         TargetID = targetID;
         Name = name;

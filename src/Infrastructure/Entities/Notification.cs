@@ -16,9 +16,8 @@ public class Notification
         
     }
 
-    public Notification(int id, DomainEntityType entityType, int entityID, string content)
+    public Notification(DomainEntityType entityType, int entityID, string content)
     {
-        ID = id;
         EntityType = entityType;
         EntityID = entityID;
         Content = content;

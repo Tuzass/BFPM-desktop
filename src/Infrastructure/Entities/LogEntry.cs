@@ -15,9 +15,8 @@ public class LogEntry
         
     }
 
-    public LogEntry(int id, DomainEntityType entityType, int entityID, string content)
+    public LogEntry(DomainEntityType entityType, int entityID, string content)
     {
-        ID = id;
         EntityType = entityType;
         EntityID = entityID;
         Content = content;

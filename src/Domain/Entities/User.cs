@@ -2,16 +2,15 @@
 
 public class User
 {
-    public int? ID {get; private set;}
+    public int ID {get; private set;}
     public string Username {get; private set;} = null!;
     public string Email {get; private set;} = null!;
     public bool IsActive {get; set;}
 
     private User() { }
 
-    public User(int? id, string username, string email)
+    public User(string username, string email)
     {
-        ID = id;
         Username = username;
         Email = email;
         IsActive = true;

@@ -14,9 +14,8 @@ public class Folder
         
     }
 
-    public Folder(int id, int ownerID, string name, string description)
+    public Folder(int ownerID, string name, string description)
     {
-        ID = id;
         OwnerID = ownerID;
         Name = name;
         Description = description;

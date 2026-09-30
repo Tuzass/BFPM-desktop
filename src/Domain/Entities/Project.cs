@@ -22,9 +22,9 @@ public class Project
         
     }
 
-    public Project(int id, int ownerID, string name, string description, ProjectStatus status, bool isLocal, DateTime? createdAt, DateTime? completedAt)
+    public Project(int ownerID, string name, string description, ProjectStatus status, bool isLocal, DateTime? createdAt, DateTime? completedAt)
     {
-        ID = id;
+
         OwnerID = ownerID;
         Name = name;
         Description = description;
