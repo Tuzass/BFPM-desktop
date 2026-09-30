@@ -6,10 +6,11 @@ namespace Services;
 
 static public class UserService
 {
-    public static void ValidateUser()
+    public static async Task<bool> ValidateUser(int userID)
     {
         // checks if a user is registered and active in the remote DB
         // TODO implement after ApiClient is done
+        return true;
     }
 
     public static void Register()
@@ -45,11 +46,12 @@ static public class UserService
         // TODO: implement after ApiClient is done
     }
 
-    public static void GetRegisteredUser()
+    public static async Task<User?> GetRegisteredUser(int userID)
     {
         // retrieves a user's information from the local DB
         // if not present, retrieves it from the remote DB
         // TODO: implement after ApiClient is done
+        return null;
     }
 
     public static async Task DeleteUser(int userID)
