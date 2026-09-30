@@ -7,8 +7,8 @@ public class Project
     public int ID {get; private set;}
     public int OwnerID {get; private set;}
     public int? AssignedUserID {get; private set;}
-    public string Name {get; private set;} = null!;
-    public string Description {get; private set;} = null!;
+    public string Name {get; set;} = null!;
+    public string Description {get; set;} = null!;
     public ProjectStatus Status {get; private set;}
     public bool IsLocal {get; private set;}
     public bool EnableLocalNotifications {get; set;}
@@ -33,38 +33,6 @@ public class Project
         EnableLocalNotifications = true;
         CreatedAt = (createdAt == null) ? DateTime.UtcNow : (DateTime)createdAt;
         CompletedAt = completedAt;
-    }
-
-    private static bool IsNameValid(string name)
-    {
-        if (name.Length >= 3 && name.Length <= 30)
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    public bool Rename(string newName)
-    {
-        if (!IsNameValid(newName))
-        {
-            return false;
-        }
-
-        Name = newName;
-        return true;
-    }
-
-    public bool ChangeDescription(string newDescription)
-    {
-        if (newDescription.Length > MaxDescriptionLength)
-        {
-            return false;
-        }
-
-        Description = newDescription;
-        return true;
     }
 
     public bool ChangeStatus(ProjectStatus newStatus)

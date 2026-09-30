@@ -6,8 +6,8 @@ public class TaskItem
 {
     public int ID {get; private set;}
     public int ProjectID {get; private set;}
-    public string Name {get; private set;} = null!;
-    public string Description {get; private set;} = null!;
+    public string Name {get; set;} = null!;
+    public string Description {get; set;} = null!;
     public TaskItemStatus Status {get; private set;}
     public TaskItemPriority Priority {get; set;}
     public DateTime? DueDate {get; private set;}
@@ -31,38 +31,6 @@ public class TaskItem
         DueDate = dueDate;
         CreatedAt = (createdAt == null) ? DateTime.UtcNow : (DateTime)createdAt;
         CompletedAt = completedAt;
-    }
-
-    private static bool IsNameValid(string name)
-    {
-        if (name.Length >= 3 && name.Length <= 30)
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    public bool Rename(string newName)
-    {
-        if (!IsNameValid(newName))
-        {
-            return false;
-        }
-
-        Name = newName;
-        return true;
-    }
-
-    public bool ChangeDescription(string newDescription)
-    {
-        if (newDescription.Length > MaxDescriptionLength)
-        {
-            return false;
-        }
-
-        Description = newDescription;
-        return true;
     }
 
     public bool ChangeStatus(TaskItemStatus newStatus)
