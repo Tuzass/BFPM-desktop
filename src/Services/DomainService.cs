@@ -794,4 +794,115 @@ static public class DomainService
             await context.SaveChangesAsync();
         }
     }
+
+    public static async Task CopyProject(int projectID)
+    {
+        User? currentUser = await UserService.GetCurrentUser();
+
+        if (currentUser is null)
+        {
+            throw new NoCurrentUserException();
+        }
+        
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            Project? project = await context.Projects
+                .Where(p => p.ID == projectID)
+                .SingleOrDefaultAsync();
+            
+            if (project is null)
+            {
+                throw new InexistentProjectException();
+            }
+
+            string newProjectName = project.Name;
+            bool isDuplicate = await context.Projects
+                .AnyAsync(p => p.OwnerID == currentUser.ID && p.Name == project.Name);     
+
+            while (isDuplicate)
+            {
+                newProjectName += " - copy";
+                isDuplicate = await context.Projects
+                .AnyAsync(p => p.OwnerID == currentUser.ID && p.Name == newProjectName);
+            }
+
+            Project newProject = new(null, currentUser.ID, currentUser.ID, newProjectName, project.Description, project.Status, true, null, null);
+
+            if (project.Status == ProjectStatus.Completed)
+            {
+                newProject.Complete();
+            }
+
+            context.Projects.Add(newProject);
+            await context.SaveChangesAsync();
+
+            if (newProject.ID is null)
+            {
+                throw new NullReferenceException();
+            }
+
+            List<TaskItem> tasks = await GetTasksByProject(projectID);
+            List<TaskItem> newTasks = [];
+            Dictionary<int, TaskItem> newTasksByOldID = [];
+
+            foreach (var t in tasks)
+            {
+                if (t.ID is null)
+                {
+                    throw new NullReferenceException();
+                }
+
+                TaskItem newTask = new(null, newProject.ID.Value, t.Name, t.Description, t.Status, t.Priority, t.DueDate, null, null);
+
+                if (t.Status == TaskItemStatus.Completed)
+                {
+                    newTask.Complete();
+                }
+
+                newTasks.Add(newTask);
+                newTasksByOldID.Add(t.ID.Value, newTask);
+            }
+
+            List<Tag> tags = await GetTagsByProject(projectID);
+            List<Tag> newTags = [];
+            Dictionary<int, Tag> newTagsByOldID = [];
+
+            foreach (var t in tags)
+            {
+                if (t.ID is null)
+                {
+                    throw new NullReferenceException();
+                }
+
+                Tag newTag = new(null, newProject.ID.Value, t.Name);
+                newTags.Add(newTag);
+                newTagsByOldID.Add(t.ID.Value, newTag);
+            }
+
+            context.Tasks.AddRange(newTasks);
+            context.Tags.AddRange(newTags);
+            await context.SaveChangesAsync();
+
+            List<TaskTagLink> links = await context.TaskTagLinks
+                .Where(ttl => newTasksByOldID.Keys.Contains(ttl.TaskID) && newTagsByOldID.Keys.Contains(ttl.TagID))
+                .ToListAsync();
+            List<TaskTagLink> newLinks = [];
+            
+            foreach (var link in links)
+            {
+                int? newTaskID = newTasksByOldID[link.TaskID].ID;
+                int? newTagID = newTagsByOldID[link.TagID].ID;
+
+                if (newTaskID is null || newTagID is null)
+                {
+                    throw new NullReferenceException();
+                }
+
+                newLinks.Add(new(newTaskID.Value, newTagID.Value));
+            }
+
+            context.TaskTagLinks.AddRange(newLinks);
+            await context.SaveChangesAsync();
+        }
+    }
 }
