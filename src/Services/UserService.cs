@@ -84,6 +84,15 @@ static public class UserService
         }
     }
 
+    public static async Task<List<User>> GetUsers()
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            return await context.Users
+                .ToListAsync();
+        }
+    }
+
     public static async Task<User> GetLocalUser()
     {
         using (var context = AppDbContextFactory.CreateContext())
