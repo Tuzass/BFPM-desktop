@@ -28,20 +28,87 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<User>()
             .HasIndex(u => u.Email).IsUnique();
+
+        modelBuilder.Entity<Folder>()
+            .Property(f => f.ID)
+            .ValueGeneratedOnAdd();
+
+        modelBuilder.Entity<Folder>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(f => f.OwnerID)
+            .OnDelete(DeleteBehavior.NoAction);
         
         modelBuilder.Entity<Folder>()
             .HasIndex(f => new {f.OwnerID, f.Name}).IsUnique();
         
         modelBuilder.Entity<Project>()
+            .Property(p => p.ID)
+            .ValueGeneratedOnAdd();
+
+        modelBuilder.Entity<Project>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(p => p.OwnerID)
+            .OnDelete(DeleteBehavior.NoAction);
+        
+        modelBuilder.Entity<Project>()
             .HasIndex(p => new {p.OwnerID, p.Name}).IsUnique();
         
+        modelBuilder.Entity<TaskItem>()
+            .Property(t => t.ID)
+            .ValueGeneratedOnAdd();
+        
+        modelBuilder.Entity<TaskItem>()
+            .HasIndex(t => new {t.ProjectID, t.Name}).IsUnique();
+        
+        modelBuilder.Entity<TaskItem>()
+            .HasOne<Project>()
+            .WithMany()
+            .HasForeignKey(t => t.ProjectID)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<Tag>()
+            .Property(t => t.ID)
+            .ValueGeneratedOnAdd();
+
         modelBuilder.Entity<Tag>()
             .HasIndex(t => new {t.ProjectID, t.Name}).IsUnique();
+        
+        modelBuilder.Entity<Tag>()
+            .HasOne<Project>()
+            .WithMany()
+            .HasForeignKey(t => t.ProjectID)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<FolderProjectLink>()
             .HasKey(fpl => new {fpl.FolderID, fpl.ProjectID});
         
+        modelBuilder.Entity<FolderProjectLink>()
+            .HasOne<Folder>()
+            .WithMany()
+            .HasForeignKey(fpl => fpl.FolderID)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<FolderProjectLink>()
+            .HasOne<Project>()
+            .WithMany()
+            .HasForeignKey(fpl => fpl.ProjectID)
+            .OnDelete(DeleteBehavior.Cascade);
+        
         modelBuilder.Entity<TaskTagLink>()
             .HasKey(ttl => new {ttl.TaskID, ttl.TagID});
+
+        modelBuilder.Entity<TaskTagLink>()
+            .HasOne<TaskItem>()
+            .WithMany()
+            .HasForeignKey(ttl => ttl.TaskID)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<TaskTagLink>()
+            .HasOne<Tag>()
+            .WithMany()
+            .HasForeignKey(ttl => ttl.TagID)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
