@@ -2,6 +2,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Database;
 using Infrastructure.Entities;
+using Infrastructure.Enums;
 using Services.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -542,6 +543,171 @@ static public class DomainService
                 context.TaskTagLinks.Remove(link);
                 await context.SaveChangesAsync();
             }
+        }
+    }
+
+    public static async Task ApplyLocalChange(LocalChange localChange)
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            switch (localChange.TargetType)
+            {
+                case DomainEntityType.Folder:
+                    Folder? folder = await GetFolderByID(localChange.TargetID);
+
+                    if (folder is null)
+                    {
+                        throw new InexistentFolderException();
+                    }
+
+                    if (localChange.Name is not null)
+                    {
+                        folder.Name = localChange.Name;
+                    }
+
+                    if (localChange.Description is not null)
+                    {
+                        folder.Description = localChange.Description;
+                    }
+
+                    folder.IncreaseVersion();
+                    break;
+                
+                case DomainEntityType.Project:
+                    Project? project = await GetProjectByID(localChange.TargetID);
+
+                    if (project is null)
+                    {
+                        throw new InexistentProjectException();
+                    }
+
+                    if (localChange.Name is not null)
+                    {
+                        project.Name = localChange.Name;
+                    }
+
+                    if (localChange.Description is not null)
+                    {
+                        project.Description = localChange.Description;
+                    }
+
+                    if (localChange.Status is not null)
+                    {
+                        switch (localChange.Status)
+                        {
+                            case DomainEntityStatus.Active:
+                                project.ChangeStatus(ProjectStatus.Active);
+                                break;
+                            
+                            case DomainEntityStatus.Archived:
+                                project.ChangeStatus(ProjectStatus.Archived);
+                                break;
+                            
+                            case DomainEntityStatus.OnHold:
+                                project.ChangeStatus(ProjectStatus.OnHold);
+                                break;
+                            
+                            case DomainEntityStatus.Completed:
+                                project.Complete();
+                                break;
+                        }
+                    }
+
+                    project.IncreaseVersion();
+                    break;
+                
+                case DomainEntityType.Task:
+                    TaskItem? task = await GetTaskByID(localChange.TargetID);
+
+                    if (task is null)
+                    {
+                        throw new InexistentTaskException();
+                    }
+
+                    if (localChange.Name is not null)
+                    {
+                        task.Name = localChange.Name;
+                    }
+
+                    if (localChange.Description is not null)
+                    {
+                        task.Description = localChange.Description;
+                    }
+
+                    if (localChange.Status is not null)
+                    {
+                        switch (localChange.Status)
+                        {
+                            case DomainEntityStatus.InProgress:
+                                task.ChangeStatus(TaskItemStatus.InProgress);
+                                break;
+                            
+                            case DomainEntityStatus.Todo:
+                                task.ChangeStatus(TaskItemStatus.Todo);
+                                break;
+                            
+                            case DomainEntityStatus.OnHold:
+                                task.ChangeStatus(TaskItemStatus.OnHold);
+                                break;
+                            
+                            case DomainEntityStatus.Blocked:
+                                task.ChangeStatus(TaskItemStatus.Blocked);
+                                break;
+                            
+                            case DomainEntityStatus.Completed:
+                                task.Complete();
+                                break;
+                        }
+                    }
+
+                    if (localChange.Priority is not null)
+                    {
+                        switch (localChange.Priority)
+                        {
+                            case TaskItemPriority.Low:
+                                task.Priority = TaskItemPriority.Low;
+                                break;
+
+                            case TaskItemPriority.Medium:
+                                task.Priority = TaskItemPriority.Medium;
+                                break;
+                            
+                            case TaskItemPriority.High:
+                                task.Priority = TaskItemPriority.High;
+                                break;
+                            
+                            case TaskItemPriority.Urgent:
+                                task.Priority = TaskItemPriority.Urgent;
+                                break;
+                        }
+                    }
+
+                    if (localChange.DueDate is not null)
+                    {
+                        task.ChangeDueDate((DateTime)localChange.DueDate);
+                    }
+
+                    task.IncreaseVersion();
+                    break;
+                
+                case DomainEntityType.Tag:
+                    Tag? tag = await GetTagByID(localChange.TargetID);
+
+                    if (tag is null)
+                    {
+                        throw new InexistentTagException();
+                    }
+
+                    if (localChange.Name is not null)
+                    {
+                        tag.Name = localChange.Name;
+                    }
+
+                    tag.IncreaseVersion();
+                    break;
+            }
+
+            await context.SaveChangesAsync();
         }
     }
 }
