@@ -710,4 +710,88 @@ static public class DomainService
             await context.SaveChangesAsync();
         }
     }
+
+    public static async Task DeleteFolder(int folderID)
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            bool folderExists = await context.Folders
+                .AnyAsync(f => f.ID == folderID);
+            
+            if (!folderExists)
+            {
+                return;
+            }
+
+            Folder? folder = await context.Folders
+                .Where(f => f.ID == folderID)
+                .SingleAsync();
+            
+            context.Folders.Remove(folder);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    public static async Task DeleteProject(int projectID)
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            bool projectExists = await context.Projects
+                .AnyAsync(f => f.ID == projectID);
+            
+            if (!projectExists)
+            {
+                return;
+            }
+
+            Project? project = await context.Projects
+                .Where(f => f.ID == projectID)
+                .SingleAsync();
+            
+            context.Projects.Remove(project);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    public static async Task DeleteTask(int taskID)
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            bool taskExists = await context.Tasks
+                .AnyAsync(f => f.ID == taskID);
+            
+            if (!taskExists)
+            {
+                return;
+            }
+
+            TaskItem? task = await context.Tasks
+                .Where(f => f.ID == taskID)
+                .SingleAsync();
+            
+            context.Tasks.Remove(task);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    public static async Task DeleteTag(int tagID)
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            bool tagExists = await context.Tags
+                .AnyAsync(f => f.ID == tagID);
+            
+            if (!tagExists)
+            {
+                return;
+            }
+
+            Tag? tag = await context.Tags
+                .Where(f => f.ID == tagID)
+                .SingleAsync();
+            
+            context.Tags.Remove(tag);
+            await context.SaveChangesAsync();
+        }
+    }
 }
