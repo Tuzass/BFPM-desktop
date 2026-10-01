@@ -339,7 +339,7 @@ static public class DomainService
                 throw new DuplicateFolderException();
             }
 
-            Folder newFolder = new(currentUser.ID, folderName.ToLowerInvariant(), folderDescription);
+            Folder newFolder = new(null, currentUser.ID, folderName.ToLowerInvariant(), folderDescription);
             context.Folders.Add(newFolder);
             await context.SaveChangesAsync();
         }
@@ -364,7 +364,7 @@ static public class DomainService
                 throw new DuplicateProjectException();
             }
 
-            Project newProject = new(currentUser.ID, projectName.ToLowerInvariant(), projectDescription, projectStatus, true, null, null);
+            Project newProject = new(null, currentUser.ID, currentUser.ID, projectName.ToLowerInvariant(), projectDescription, projectStatus, true, null, null);
             context.Projects.Add(newProject);
             await context.SaveChangesAsync();
         }
@@ -389,7 +389,7 @@ static public class DomainService
                 throw new DuplicateTaskException();
             }
 
-            TaskItem newTask = new(projectID, taskName.ToLowerInvariant(), taskDescription, taskStatus, taskPriority, taskDueDate, null, null);
+            TaskItem newTask = new(null, projectID, taskName.ToLowerInvariant(), taskDescription, taskStatus, taskPriority, taskDueDate, null, null);
             context.Tasks.Add(newTask);
             await context.SaveChangesAsync();
         }
@@ -414,7 +414,7 @@ static public class DomainService
                 throw new DuplicateTagException();
             }
 
-            Tag newTag = new(projectID, tagName.ToLowerInvariant());
+            Tag newTag = new(null, projectID, tagName.ToLowerInvariant());
             context.Tags.Add(newTag);
             await context.SaveChangesAsync();
         }
