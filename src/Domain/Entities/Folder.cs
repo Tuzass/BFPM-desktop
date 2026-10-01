@@ -2,7 +2,7 @@ namespace Domain.Entities;
 
 public class Folder
 {
-    public int ID {get; private set;}
+    public int? ID {get; private set;}
     public int? OwnerID {get; private set;}
     public string Name {get; set;} = null!;
     public string Description {get; set;} = null!;
@@ -13,8 +13,9 @@ public class Folder
         
     }
 
-    public Folder(int ownerID, string name, string description, int? version = null)
+    public Folder(int? id, int? ownerID, string name, string description, int? version = null)
     {
+        ID = id;
         OwnerID = ownerID;
         Name = name;
         Description = description;

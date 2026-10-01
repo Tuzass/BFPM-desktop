@@ -4,7 +4,7 @@ namespace Domain.Entities;
 
 public class TaskItem
 {
-    public int ID {get; private set;}
+    public int? ID {get; private set;}
     public int ProjectID {get; private set;}
     public string Name {get; set;} = null!;
     public string Description {get; set;} = null!;
@@ -20,8 +20,9 @@ public class TaskItem
         
     }
 
-    public TaskItem(int projectID, string name, string description, TaskItemStatus status, TaskItemPriority priority, DateTime? dueDate, DateTime? createdAt, DateTime? completedAt, int? version = null)
+    public TaskItem(int? id, int projectID, string name, string description, TaskItemStatus status, TaskItemPriority priority, DateTime? dueDate, DateTime? createdAt, DateTime? completedAt, int? version = null)
     {
+        ID = id;
         ProjectID = projectID;
         Name = name;
         Description = description;

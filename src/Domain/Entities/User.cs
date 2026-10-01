@@ -9,8 +9,9 @@ public class User
 
     private User() { }
 
-    public User(string username, string email)
+    public User(int id, string username, string email)
     {
+        ID = id;
         Username = username;
         Email = email;
         IsActive = true;

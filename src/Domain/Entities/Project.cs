@@ -4,7 +4,7 @@ namespace Domain.Entities;
 
 public class Project
 {
-    public int ID {get; private set;}
+    public int? ID {get; private set;}
     public int OwnerID {get; private set;}
     public int AssignedUserID {get; private set;}
     public string Name {get; set;} = null!;
@@ -21,8 +21,9 @@ public class Project
         
     }
 
-    public Project(int ownerID, int assignedUserID, string name, string description, ProjectStatus status, bool isLocal, DateTime? createdAt, DateTime? completedAt, int? version = null)
+    public Project(int? id, int ownerID, int assignedUserID, string name, string description, ProjectStatus status, bool isLocal, DateTime? createdAt, DateTime? completedAt, int? version = null)
     {
+        ID = id;
         OwnerID = ownerID;
         AssignedUserID = assignedUserID;
         Name = name;
