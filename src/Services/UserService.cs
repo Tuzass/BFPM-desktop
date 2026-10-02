@@ -7,6 +7,24 @@ namespace Services;
 
 static public class UserService
 {
+    public static void CreateLocalUser()
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            bool alreadyExists = context.Users
+                .Any(u => u.ID == 0);
+
+            if (alreadyExists)
+            {
+                return;
+            }
+
+            User localUser = new(0, "Local User", "");
+            context.Add(localUser);
+            context.SaveChanges();
+        }
+    }
+
     public static async Task<bool> ValidateUser(int userID)
     {
         // checks if a user is registered and active in the remote DB
