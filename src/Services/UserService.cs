@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Services.Exceptions;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,6 +28,7 @@ static public class UserService
 
     public static void Logoff()
     {
+        // switches to "no current user"
         // deletes whatever authentication tokens are stored for a given user
         // TODO: implement after ApiClient is done
     }
@@ -119,18 +121,42 @@ static public class UserService
 
         using (var context = AppDbContextFactory.CreateContext())
         {
+            var currentUser = await GetCurrentUser();
+
+            if (currentUser is not null && currentUser.ID == userID)
+            {
+                Logoff();
+            }
+
             var user = await context.Users
-                .SingleAsync(u => u.ID == userID);
+                .SingleOrDefaultAsync(u => u.ID == userID);
+
+            if (user is null)
+            {
+                throw new UserNotRegisteredLocally();
+            }
 
             context.Users.Remove(user);
             await context.SaveChangesAsync();
         }
     }
 
-    public static void SwitchCurrentUser(int newCurrentUserID)
+    public static async Task SwitchCurrentUser(int newCurrentUserID)
     {
-        var settings = SettingsService.GetSettings();
-        settings["CurrentUserID"] = newCurrentUserID.ToString();
-        SettingsService.UpdateSettings(settings);
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            User? newCurrentUser = await context.Users
+                .Where(u => u.ID == newCurrentUserID)
+                .SingleOrDefaultAsync();
+            
+            if (newCurrentUser is null)
+            {
+                throw new UserNotRegisteredLocally();
+            }
+
+            var settings = SettingsService.GetSettings();
+            settings["CurrentUserID"] = newCurrentUserID.ToString();
+            SettingsService.UpdateSettings(settings);
+        }
     }
 }
