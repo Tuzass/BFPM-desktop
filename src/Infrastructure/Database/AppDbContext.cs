@@ -43,6 +43,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(f => new {f.OwnerID, f.Name}).IsUnique();
         
         modelBuilder.Entity<Project>()
+            .HasKey(p => new { p.ID, p.AssignedUserID });
+        
+        modelBuilder.Entity<Project>()
             .Property(p => p.ID)
             .ValueGeneratedOnAdd();
 
