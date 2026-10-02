@@ -16,7 +16,7 @@ sealed class Program
 
         if (args.Contains("--nogui"))
         {
-            CLI.CLI.Run(args);
+            CLI.HomePage.Run(args);
         }
 
         else
