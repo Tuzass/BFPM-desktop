@@ -136,7 +136,7 @@ If you wish to log in as an unregistered user, do 'login' (this requires a netwo
 
             if (inputString.Trim() == "edit")
             {
-                // TODO: implement user edit page
+                // TODO: implement user edit page after ApiClient is done
                 // if edit was successful, log actions
                 Console.WriteLine("Editing a user is currently not possible!\n");
                 continue;
@@ -168,7 +168,7 @@ If you wish to log in as an unregistered user, do 'login' (this requires a netwo
 
             if (inputString.Trim() == "login")
             {
-                // TODO: implement login after ApiClient is done
+                // TODO: implement user login page after ApiClient is done
                 // if login was successful, log into actions
                 Console.WriteLine("Logging in is currently not possible!\n");
             }
@@ -208,7 +208,7 @@ If you wish to log in as an unregistered user, do 'login' (this requires a netwo
 
             if (inputString.Trim() == "register")
             {
-                // TODO: implement register after ApiClient is done
+                // TODO: implement user register page after ApiClient is done
                 // if register was successful, log into actions
                 Console.WriteLine("Registering new users is currently not possible!\n");
             }
