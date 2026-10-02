@@ -43,9 +43,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(f => new {f.OwnerID, f.Name}).IsUnique();
         
         modelBuilder.Entity<Project>()
-            .HasKey(p => new { p.ID, p.AssignedUserID });
-        
-        modelBuilder.Entity<Project>()
             .Property(p => p.ID)
             .ValueGeneratedOnAdd();
 
@@ -59,7 +56,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasIndex(p => new {p.OwnerID, p.Name}).IsUnique();
 
         modelBuilder.Entity<Project>()
-            .HasIndex(p => new {p.OwnerID, p.Name}).IsUnique();
+            .HasIndex(p => new {p.RemoteID, p.AssignedUserID}).IsUnique();
         
         modelBuilder.Entity<TaskItem>()
             .Property(t => t.ID)

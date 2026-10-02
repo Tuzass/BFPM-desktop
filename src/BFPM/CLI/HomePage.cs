@@ -85,6 +85,7 @@ Enters the page for the project specified by <project id>
 
     public static async void Run(string[] args)
     {
+        var settings = SettingsService.GetSettings();
         Console.WriteLine(StartMessage);
 
         while (true)
@@ -141,7 +142,7 @@ Enters the page for the project specified by <project id>
 
             if (inputString.Trim() == "settings")
             {
-                if (await SettingsPage.Run(args))
+                if (await SettingsPage.Run(settings))
                 {
                     break;
                 }
@@ -151,11 +152,12 @@ Enters the page for the project specified by <project id>
 
             if (inputString.Trim() == "users")
             {
-                if (await UserPage.Run(args))
+                if (await UserPage.Run(settings))
                 {
                     break;
                 }
 
+                settings = SettingsService.GetSettings();
                 continue;
             }
 
@@ -171,9 +173,24 @@ Enters the page for the project specified by <project id>
             {
                 if (int.TryParse(input[1], out int id))
                 {
-                    if (await FolderPage.Run(args, id))
+                    try
                     {
-                        break;
+                        if (await FolderPage.Run(settings, id))
+                        {
+                            break;
+                        }
+
+                        settings = SettingsService.GetSettings();
+                    }
+
+                    catch (NoCurrentUserException)
+                    {
+                        Console.WriteLine("No user is currently selected\nEnter 'users' to go to the users page and select a user\n");
+                    }
+
+                    catch (Services.Exceptions.UnauthorizedAccessException)
+                    {
+                        Console.WriteLine("The current user is not authorized to see the requested folder\n");
                     }
                 }
 
@@ -189,7 +206,13 @@ Enters the page for the project specified by <project id>
                 {
                     try
                     {
+                        SettingsService.UpdateSettings(settings);
                         List<Folder> folders = await DomainService.GetCurrentUserFolders();
+
+                        if (folders.Count == 0)
+                        {
+                            Console.WriteLine("The current user doesn't own any folders\n");
+                        }
 
                         foreach (var folder in folders)
                         {
@@ -199,7 +222,7 @@ Enters the page for the project specified by <project id>
 
                     catch (NoCurrentUserException)
                     {
-                        Console.WriteLine("No user is currently selected\nType 'users' to go to the users page and select a user\n");
+                        Console.WriteLine("No user is currently selected\nEnter 'users' to go to the users page and select a user\n");
                     }
                 }
 
@@ -207,7 +230,13 @@ Enters the page for the project specified by <project id>
                 {
                     try
                     {
-                        List<Project> projects = await DomainService.GetCurrentUserProjects();
+                        SettingsService.UpdateSettings(settings);
+                        var projects = await DomainService.GetCurrentUserProjects();
+
+                        if (projects.Count == 0)
+                        {
+                            Console.WriteLine("The current user isn't assigned to any projects\n");
+                        }
 
                         foreach (var project in projects)
                         {
@@ -217,14 +246,12 @@ Enters the page for the project specified by <project id>
 
                     catch (NoCurrentUserException)
                     {
-                        Console.WriteLine("No user is currently selected\nType 'users' to go to the users page and select a user\n");
+                        Console.WriteLine("No user is currently selected\nEnter 'users' to go to the users page and select a user\n");
                     }
                 }
 
                 else if (input[1] == "settings")
                 {
-                    var settings = SettingsService.GetSettings();
-
                     foreach (var setting in settings)
                     {
                         Console.WriteLine($"{setting.Key} = {setting.Value}");
@@ -262,10 +289,12 @@ Enters the page for the project specified by <project id>
                 if (int.TryParse(input[1], out int id))
                 {
                     Console.Write("\x1b[?1049h");
-                    if (await ProjectPage.Run(args, id))
+                    if (await ProjectPage.Run(settings, id))
                     {
                         break;
                     }
+
+                    settings = SettingsService.GetSettings();
                 }
 
                 else

@@ -39,8 +39,43 @@ static public class DomainService
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Projects
-                .Where(p => p.OwnerID == currentUser.ID || p.AssignedUserID == currentUser.ID)
+                .Where(p => p.AssignedUserID == currentUser.ID)
                 .ToListAsync();
+        }
+    }
+
+    public static async Task<List<Project>> GetCurrentUserProjectsNotAssignedToFolder(int folderID)
+    {
+        var currentUser = await UserService.GetCurrentUser();
+
+        if (currentUser is null)
+        {
+            throw new NoCurrentUserException();
+        }
+
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            return await context.Projects
+                .Where(p => p.AssignedUserID == currentUser.ID)
+                .Where(p => !context.FolderProjectLinks
+                    .Any(l => l.FolderID == folderID && l.ProjectID == p.ID))
+                .ToListAsync();
+        }
+    }
+
+    public static async Task<bool> IsCurrentUserAssignedToProject(int projectID)
+    {
+        User? currentUser = await UserService.GetCurrentUser();
+
+        if (currentUser is null)
+        {
+            throw new NoCurrentUserException();
+        }
+
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            return await context.Projects
+                .AnyAsync(p => p.ID == projectID && p.AssignedUserID == currentUser.ID);
         }
     }
 
@@ -365,7 +400,7 @@ static public class DomainService
                 throw new DuplicateProjectException();
             }
 
-            Project newProject = new(null, currentUser.ID, currentUser.ID, projectName.ToLowerInvariant(), projectDescription, projectStatus, true, null, null);
+            Project newProject = new(null, null, currentUser.ID, currentUser.ID, projectName.ToLowerInvariant(), projectDescription, projectStatus, null, null);
             context.Projects.Add(newProject);
             await context.SaveChangesAsync();
         }
@@ -795,7 +830,7 @@ static public class DomainService
         }
     }
 
-    public static async Task CopyProject(int projectID)
+    public static async Task CopyProject(int projectID, int? remoteID = null)
     {
         User? currentUser = await UserService.GetCurrentUser();
 
@@ -826,7 +861,7 @@ static public class DomainService
                 .AnyAsync(p => p.OwnerID == currentUser.ID && p.Name == newProjectName);
             }
 
-            Project newProject = new(null, currentUser.ID, currentUser.ID, newProjectName, project.Description, project.Status, true, null, null);
+            Project newProject = new(null, remoteID, currentUser.ID, currentUser.ID, newProjectName, project.Description, project.Status, null, null);
 
             if (project.Status == ProjectStatus.Completed)
             {

@@ -5,12 +5,12 @@ namespace Domain.Entities;
 public class Project
 {
     public int? ID {get; private set;}
+    public int? RemoteID {get; private set;}
     public int OwnerID {get; private set;}
     public int AssignedUserID {get; private set;}
     public string Name {get; set;} = null!;
     public string Description {get; set;} = null!;
     public ProjectStatus Status {get; private set;}
-    public bool IsLocal {get; private set;}
     public bool EnableLocalNotifications {get; set;}
     public DateTime CreatedAt {get; private set;}
     public DateTime? CompletedAt {get; private set;}
@@ -21,15 +21,15 @@ public class Project
         
     }
 
-    public Project(int? id, int ownerID, int assignedUserID, string name, string description, ProjectStatus status, bool isLocal, DateTime? createdAt, DateTime? completedAt, int? version = null)
+    public Project(int? id, int? remoteID, int ownerID, int assignedUserID, string name, string description, ProjectStatus status, DateTime? createdAt, DateTime? completedAt, int? version = null)
     {
         ID = id;
+        RemoteID = remoteID;
         OwnerID = ownerID;
         AssignedUserID = assignedUserID;
         Name = name;
         Description = description;
         Status = status;
-        IsLocal = isLocal;
         EnableLocalNotifications = true;
         CreatedAt = (createdAt == null) ? DateTime.UtcNow : (DateTime)createdAt;
         CompletedAt = completedAt;

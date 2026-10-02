@@ -13,7 +13,7 @@ public class UserPage
 To get help about a specific command, try 'help <command>'
 ";
 
-private static string GetHelpMessage(string command)
+    private static string GetHelpMessage(string command)
     {
         if (command == "clear")
         {
@@ -27,7 +27,7 @@ private static string GetHelpMessage(string command)
 
         if (command == "edit")
         {
-            return "Edits the current user's information\n";
+            return "Enters the user edit page\n";
         }
 
         if (command == "exit")
@@ -101,7 +101,7 @@ If you wish to log in as an unregistered user, do 'login' (this requires a netwo
         }
     }
 
-    public static async Task<bool> Run(string[] args)
+    public static async Task<bool> Run(Dictionary<string, string> settings)
     {
         User? currentUser = await UserService.GetCurrentUser();
         Console.Write("\x1b[?1049h");
@@ -144,7 +144,6 @@ If you wish to log in as an unregistered user, do 'login' (this requires a netwo
 
             if (inputString.Trim() == "exit")
             {
-                Console.WriteLine("Returning to main page\n");
                 break;
             }
 
@@ -183,13 +182,15 @@ If you wish to log in as an unregistered user, do 'login' (this requires a netwo
                     continue;
                 }
                 
-                var settings = SettingsService.GetSettings();
                 settings["CurrentUserID"] = "";
                 SettingsService.UpdateSettings(settings);
 
                 Console.WriteLine($"{currentUser.Username} has logged off\n");
                 actions.Add($"{currentUser.Username} has logged off");
                 currentUser = null;
+                
+                Console.Clear();
+                await PrintTitle();
                 continue;
             }
 
