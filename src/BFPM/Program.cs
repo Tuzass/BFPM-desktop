@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using Services;
 using System;
 
 namespace BFPM;
@@ -8,6 +9,8 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        UserService.CreateLocalUser();
+
         if (args.Contains("--version"))
         {
             Console.WriteLine("BFPM 1.0.0");

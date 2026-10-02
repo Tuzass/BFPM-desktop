@@ -57,6 +57,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         
         modelBuilder.Entity<Project>()
             .HasIndex(p => new {p.OwnerID, p.Name}).IsUnique();
+
+        modelBuilder.Entity<Project>()
+            .HasIndex(p => new {p.OwnerID, p.Name}).IsUnique();
         
         modelBuilder.Entity<TaskItem>()
             .Property(t => t.ID)
