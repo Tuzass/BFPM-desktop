@@ -1,6 +1,6 @@
 using Domain.Entities;
 
-namespace BFPM.CLI;
+namespace BFPM;
 
 public class Utils
 {
@@ -11,6 +11,7 @@ public class Utils
         for (int i = 0; i < input.Length - 1; i++)
         {
             input[i] = input[i].Trim([' ', '\n', '\t']);
+            input[i] = input[i].ToLowerInvariant();
         }
 
         return input;
