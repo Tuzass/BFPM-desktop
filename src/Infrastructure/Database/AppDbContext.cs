@@ -34,6 +34,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .ValueGeneratedOnAdd();
 
         modelBuilder.Entity<Folder>()
+            .Property(f => f.Name)
+            .UseCollation("NOCASE");
+
+        modelBuilder.Entity<Folder>()
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(f => f.OwnerID)
@@ -45,6 +49,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Project>()
             .Property(p => p.ID)
             .ValueGeneratedOnAdd();
+        
+        modelBuilder.Entity<Project>()
+            .Property(f => f.Name)
+            .UseCollation("NOCASE");
 
         modelBuilder.Entity<Project>()
             .HasOne<User>()
@@ -63,6 +71,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .ValueGeneratedOnAdd();
         
         modelBuilder.Entity<TaskItem>()
+            .Property(f => f.Name)
+            .UseCollation("NOCASE");
+        
+        modelBuilder.Entity<TaskItem>()
             .HasIndex(t => new {t.ProjectID, t.Name}).IsUnique();
         
         modelBuilder.Entity<TaskItem>()
@@ -74,6 +86,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<Tag>()
             .Property(t => t.ID)
             .ValueGeneratedOnAdd();
+        
+        modelBuilder.Entity<Tag>()
+            .Property(f => f.Name)
+            .UseCollation("NOCASE");
 
         modelBuilder.Entity<Tag>()
             .HasIndex(t => new {t.ProjectID, t.Name}).IsUnique();
