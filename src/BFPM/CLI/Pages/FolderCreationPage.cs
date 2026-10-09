@@ -160,6 +160,7 @@ Left/Right | Moves cursor within field");
         int minCursorHorizontalPosition = longestFieldLength + 2;
 
         Console.Write("\x1b[?1049h");
+        Console.Write("\x1b[?7l");
         Console.Clear();
         PrintTitle();
         PrintFields(fieldNames, fieldContents, longestFieldLength);
@@ -188,7 +189,7 @@ Left/Right | Moves cursor within field");
                         continue;
                     }
 
-                    if (!Utils.ValidateDomainEntityName(fieldContents[0]))
+                    if (!Utils.ValidateDomainEntityDescription(fieldContents[1]))
                     {
                         PrintErrorMessage("Please make sure it is less than 2000 characters long!");
                         continue;
@@ -233,6 +234,7 @@ Left/Right | Moves cursor within field");
                             }
 
                             Console.CursorVisible = true;
+                            Console.Write("\x1b[?7h");
                             Console.Write("\x1b[?1049l");
                             return new(null, currentUserID, fieldContents[0], fieldContents[1], null);
                         }
@@ -276,6 +278,7 @@ Left/Right | Moves cursor within field");
                             }
 
                             Console.CursorVisible = true;
+                            Console.Write("\x1b[?7h");
                             Console.Write("\x1b[?1049l");
                             return null;
                         }
@@ -304,6 +307,7 @@ Left/Right | Moves cursor within field");
                     if (editKey.Key == ConsoleKey.UpArrow)
                     {
                         fieldIndex = (fieldIndex - 1 + fieldCount) % fieldCount;
+                        cursorIndex = minCursorHorizontalPosition + fieldContents[fieldIndex].Length;
                         Console.SetCursorPosition(cursorIndex, 2 + fieldIndex);
                         continue;
                     }
@@ -311,6 +315,7 @@ Left/Right | Moves cursor within field");
                     if (editKey.Key == ConsoleKey.DownArrow || editKey.Key == ConsoleKey.Tab)
                     {
                         fieldIndex = (fieldIndex + 1) % fieldCount;
+                        cursorIndex = minCursorHorizontalPosition + fieldContents[fieldIndex].Length;
                         Console.SetCursorPosition(cursorIndex, 2 + fieldIndex);
                         continue;
                     }
