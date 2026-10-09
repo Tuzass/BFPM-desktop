@@ -142,8 +142,6 @@ static public class DomainService
 
     public static async Task<List<Folder>> GetFoldersByProject(int projectID)
     {
-        await GetFolderByID(projectID);
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.FolderProjectLinks
@@ -157,39 +155,18 @@ static public class DomainService
         }
     }
 
-    public static async Task<List<Folder>> GetFoldersByName(string folderName)
+    public static async Task<List<Folder>> GetFoldersByName(int ownerID, string folderName)
     {
-        User? currentUser = await UserService.GetCurrentUser();
-
-        if (currentUser is null)
-        {
-            throw new NoCurrentUserException();
-        }
-        
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Folders
-                .Where(f => f.OwnerID == currentUser.ID && f.Name.Contains(folderName.ToLowerInvariant()))
+                .Where(f => f.OwnerID == ownerID && f.Name.Contains(folderName))
                 .ToListAsync();
         }
     }
 
     public static async Task<List<Project>> GetProjectsByFolder(int folderID)
     {
-        Folder? folder = await GetFolderByID(folderID);
-
-        if (folder is null)
-        {
-            throw new InexistentFolderException();
-        }
-
-        User? currentUser = await UserService.GetCurrentUser();
-
-        if (currentUser is null)
-        {
-            throw new NoCurrentUserException();
-        }
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.FolderProjectLinks
@@ -288,7 +265,7 @@ static public class DomainService
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Tasks
-                .Where(t => t.ProjectID == projectID && t.Name.Contains(taskName.ToLowerInvariant()))
+                .Where(t => t.ProjectID == projectID && t.Name.Contains(taskName))
                 .ToListAsync();
         }
     }
@@ -351,7 +328,7 @@ static public class DomainService
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Tags
-                .Where(t => t.ProjectID == projectID && t.Name.Contains(tagName.ToLowerInvariant()))
+                .Where(t => t.ProjectID == projectID && t.Name.Contains(tagName))
                 .ToListAsync();
         }
     }
@@ -368,14 +345,14 @@ static public class DomainService
         using (var context = AppDbContextFactory.CreateContext())
         {
             bool isDuplicate = await context.Folders
-                .AnyAsync(f => f.OwnerID == currentUser.ID && f.Name == folderName.ToLowerInvariant());
+                .AnyAsync(f => f.OwnerID == currentUser.ID && f.Name == folderName);
             
             if (isDuplicate)
             {
                 throw new DuplicateFolderException();
             }
 
-            Folder newFolder = new(null, currentUser.ID, folderName.ToLowerInvariant(), folderDescription);
+            Folder newFolder = new(null, currentUser.ID, folderName, folderDescription);
             context.Folders.Add(newFolder);
             await context.SaveChangesAsync();
         }
@@ -393,14 +370,14 @@ static public class DomainService
         using (var context = AppDbContextFactory.CreateContext())
         {
             bool isDuplicate = await context.Projects
-                .AnyAsync(p => p.OwnerID == currentUser.ID && p.Name == projectName.ToLowerInvariant());
+                .AnyAsync(p => p.OwnerID == currentUser.ID && p.Name == projectName);
             
             if (isDuplicate)
             {
                 throw new DuplicateProjectException();
             }
 
-            Project newProject = new(null, null, currentUser.ID, currentUser.ID, projectName.ToLowerInvariant(), projectDescription, projectStatus, null, null);
+            Project newProject = new(null, null, currentUser.ID, currentUser.ID, projectName, projectDescription, projectStatus, null, null);
             context.Projects.Add(newProject);
             await context.SaveChangesAsync();
         }
@@ -418,14 +395,14 @@ static public class DomainService
         using (var context = AppDbContextFactory.CreateContext())
         {
             bool isDuplicate = await context.Tasks
-                .AnyAsync(t => t.ProjectID == projectID && t.Name == taskName.ToLowerInvariant());
+                .AnyAsync(t => t.ProjectID == projectID && t.Name == taskName);
             
             if (isDuplicate)
             {
                 throw new DuplicateTaskException();
             }
 
-            TaskItem newTask = new(null, projectID, taskName.ToLowerInvariant(), taskDescription, taskStatus, taskPriority, taskDueDate, null, null);
+            TaskItem newTask = new(null, projectID, taskName, taskDescription, taskStatus, taskPriority, taskDueDate, null, null);
             context.Tasks.Add(newTask);
             await context.SaveChangesAsync();
         }
@@ -443,14 +420,14 @@ static public class DomainService
         using (var context = AppDbContextFactory.CreateContext())
         {
             bool isDuplicate = await context.Tags
-                .AnyAsync(t => t.ProjectID == projectID && t.Name == tagName.ToLowerInvariant());
+                .AnyAsync(t => t.ProjectID == projectID && t.Name == tagName);
             
             if (isDuplicate)
             {
                 throw new DuplicateTagException();
             }
 
-            Tag newTag = new(null, projectID, tagName.ToLowerInvariant());
+            Tag newTag = new(null, projectID, tagName);
             context.Tags.Add(newTag);
             await context.SaveChangesAsync();
         }
