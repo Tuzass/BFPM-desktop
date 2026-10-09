@@ -22,24 +22,16 @@ public class DeleteTagCommand : ICommand
 
     public async Task Execute()
     {
-        var tag = await DomainService.GetTagByID(TagID);
-
-        if (tag is null)
-        {
-            throw new UnauthorizedAccessException();
-        }
-
         var currentUser = await UserService.GetCurrentUser();
 
-        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
-        var project = projects.SingleOrDefault(p => p.ID == tag.ProjectID);
+        var tag = await DomainService.GetTagByID(TagID);
 
-        if (project is null)
+        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, tag.ProjectID))
         {
             throw new UnauthorizedAccessException();
         }
 
-        if (project.RemoteID is not null)
+        if (!await DomainService.IsProjectLocal(tag.ProjectID))
         {
             throw new NonlocalChangeException();
         }

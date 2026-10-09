@@ -23,10 +23,7 @@ public class DeleteFolderCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        var folders = await DomainService.GetFoldersByUser(currentUser.ID);
-        var folder = folders.SingleOrDefault(f => f.ID == FolderID);
-
-        if (folder is null)
+        if (!await DomainService.IsFolderOwnedByUser(currentUser.ID, FolderID))
         {
             throw new UnauthorizedAccessException();
         }

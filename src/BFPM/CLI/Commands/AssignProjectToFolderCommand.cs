@@ -28,18 +28,8 @@ public class AssignProjectToFolderCommand : ICommand
         var folders = await DomainService.GetFoldersByUser(currentUser.ID);
         var folder = folders.SingleOrDefault(f => f.ID == FolderID);
 
-        if (folder is null)
-        {
-            throw new UnauthorizedAccessException();
-        }
-
         var projects = await DomainService.GetProjectsByUser(currentUser.ID);
         var project = projects.SingleOrDefault(p => p.ID == ProjectID);
-
-        if (project is null)
-        {
-            throw new UnauthorizedAccessException();
-        }
 
         // await DomainService.AssignProjectToFolder(FolderID, ProjectID);
     }

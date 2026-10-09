@@ -21,13 +21,8 @@ public partial class Utils
         return input;
     }
 
-    public static string UserToString(User? user)
+    public static string UserToString(User user)
     {
-        if (user is null)
-        {
-            return "No user is currently selected";
-        }
-
         return $@"ID: {user.ID}
 Username: {user.Username}
 Email: {user.Email}";

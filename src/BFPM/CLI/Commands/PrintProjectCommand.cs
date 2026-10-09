@@ -23,14 +23,12 @@ public class PrintProjectCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
-        var project = projects.SingleOrDefault(p => p.ID == ProjectID);
-
-        if (project is null)
+        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, ProjectID))
         {
-            throw new Services.Exceptions.UnauthorizedAccessException();
+            throw new UnauthorizedAccessException();
         }
 
+        var project = await DomainService.GetProjectByID(ProjectID);
         Console.WriteLine(Utils.ProjectToString(project));
     }
 }

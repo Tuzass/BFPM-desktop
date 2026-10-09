@@ -23,19 +23,11 @@ public class PrintTagCommand : ICommand
     {
         var tag = await DomainService.GetTagByID(TagID);
 
-        if (tag is null)
-        {
-            throw new Services.Exceptions.UnauthorizedAccessException();
-        }
-
         var currentUser = await UserService.GetCurrentUser();
 
-        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
-        var project = projects.SingleOrDefault(p => p.ID == tag.ProjectID);
-
-        if (project is null)
+        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, tag.ProjectID))
         {
-            throw new Services.Exceptions.UnauthorizedAccessException();
+            throw new UnauthorizedAccessException();
         }
 
         Console.WriteLine(Utils.TagToString(tag));

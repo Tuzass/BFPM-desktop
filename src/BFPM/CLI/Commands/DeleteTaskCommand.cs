@@ -22,24 +22,16 @@ public class DeleteTaskCommand : ICommand
 
     public async Task Execute()
     {
-        var task = await DomainService.GetTaskByID(TaskID);
-
-        if (task is null)
-        {
-            throw new UnauthorizedAccessException();
-        }
-
         var currentUser = await UserService.GetCurrentUser();
 
-        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
-        var project = projects.SingleOrDefault(p => p.ID == task.ProjectID);
+        var task = await DomainService.GetTaskByID(TaskID);
 
-        if (project is null)
+        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, task.ProjectID))
         {
             throw new UnauthorizedAccessException();
         }
 
-        if (project.RemoteID is not null)
+        if (!await DomainService.IsProjectLocal(task.ProjectID))
         {
             throw new NonlocalChangeException();
         }

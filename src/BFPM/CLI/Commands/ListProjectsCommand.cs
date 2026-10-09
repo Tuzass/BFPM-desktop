@@ -15,7 +15,9 @@ public class ListProjectsCommand : ICommand
 
     public async Task Execute()
     {
-        List<Project> projects = await DomainService.GetCurrentUserProjects();
+        var currentUser = await UserService.GetCurrentUser();
+        
+        List<Project> projects = await DomainService.GetProjectsByUser(currentUser.ID);
 
         if (projects.Count == 0)
         {

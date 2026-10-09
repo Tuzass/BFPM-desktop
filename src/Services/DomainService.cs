@@ -46,6 +46,12 @@ static public class DomainService
         }
     }
 
+    public static async Task<bool> IsProjectLocal(int projectID)
+    {
+        var project = await GetProjectByID(projectID);
+        return (project.RemoteID is null);
+    }
+
     public static async Task<bool> IsTaskDuplicate(int projectID, string taskName)
     {
         using (var context = AppDbContextFactory.CreateContext())
@@ -64,47 +70,68 @@ static public class DomainService
         }
     }
 
-    public static async Task<Folder?> GetFolderByID(int folderID)
+    public static async Task<Folder> GetFolderByID(int folderID)
     {
         using (var context = AppDbContextFactory.CreateContext())
         {
-            return await context.Folders
+            var folder = await context.Folders
                 .Where(f => f.ID == folderID)
                 .SingleOrDefaultAsync();
+            
+            if (folder is null)
+            {
+                throw new InexistentFolderException();
+            }
+
+            return folder;
         }
     }
 
-    public static async Task<Project?> GetProjectByID(int projectID)
+    public static async Task<Project> GetProjectByID(int projectID)
     {
         using (var context = AppDbContextFactory.CreateContext())
         {   
-            return await context.Projects
+            var project = await context.Projects
                 .Where(p => p.ID == projectID)
                 .SingleOrDefaultAsync();
+            
+            if (project is null)
+            {
+                throw new InexistentProjectException();
+            }
+
+            return project;
         }
     }
 
-    public static async Task<TaskItem?> GetTaskByID(int taskID)
+    public static async Task<TaskItem> GetTaskByID(int taskID)
     {
         using (var context = AppDbContextFactory.CreateContext())
         {   
-            return await context.Tasks
+            var task = await context.Tasks
                 .Where(t => t.ID == taskID)
                 .SingleOrDefaultAsync();
+            
+            if (task is null)
+            {
+                throw new InexistentTaskException();
+            }
+
+            return task;
         }
     }
 
-    public static async Task<Tag?> GetTagByID(int tagID)
+    public static async Task<Tag> GetTagByID(int tagID)
     {
         using (var context = AppDbContextFactory.CreateContext())
         {   
-            Tag? tag = await context.Tags
+            var tag = await context.Tags
                 .Where(t => t.ID == tagID)
                 .SingleOrDefaultAsync();
             
             if (tag is null)
             {
-                throw new NullReferenceException();
+                throw new InexistentTagException();
             }
 
             return tag;
@@ -199,13 +226,6 @@ static public class DomainService
 
     public static async Task<List<TaskItem>> GetTasksByProject(int projectID)
     {
-        Project? project = await GetProjectByID(projectID);
-        
-        if (project is null)
-        {
-            throw new InexistentProjectException();
-        }
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Tasks
@@ -216,13 +236,6 @@ static public class DomainService
 
     public static async Task<List<TaskItem>> GetTasksByTag(int tagID)
     {
-        Tag? tag = await GetTagByID(tagID);
-
-        if (tag is null)
-        {
-            throw new InexistentTagException();
-        }
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.TaskTagLinks
@@ -238,12 +251,7 @@ static public class DomainService
 
     public static async Task<List<TaskItem>> GetTasksByStatus(int projectID, TaskItemStatus taskStatus)
     {
-        Project? project = await GetProjectByID(projectID);
-
-        if (project is null)
-        {
-            throw new InexistentProjectException();
-        }
+        var project = await GetProjectByID(projectID);
         
         using (var context = AppDbContextFactory.CreateContext())
         {
@@ -255,12 +263,7 @@ static public class DomainService
 
     public static async Task<List<TaskItem>> GetTasksByPriority(int projectID, TaskItemPriority taskPriority)
     {
-        Project? project = await GetProjectByID(projectID);
-
-        if (project is null)
-        {
-            throw new InexistentProjectException();
-        }
+        var project = await GetProjectByID(projectID);
         
         using (var context = AppDbContextFactory.CreateContext())
         {
@@ -272,12 +275,7 @@ static public class DomainService
 
     public static async Task<List<TaskItem>> GetTasksByName(int projectID, string taskName)
     {
-        Project? project = await GetProjectByID(projectID);
-
-        if (project is null)
-        {
-            throw new InexistentProjectException();
-        }
+        var project = await GetProjectByID(projectID);
         
         using (var context = AppDbContextFactory.CreateContext())
         {
@@ -296,13 +294,6 @@ static public class DomainService
 
     public static async Task<List<Tag>> GetTagsByProject(int projectID)
     {
-        Project? project = await GetProjectByID(projectID);
-
-        if (project is null)
-        {
-            throw new InexistentProjectException();
-        }
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Tags
@@ -313,13 +304,6 @@ static public class DomainService
 
     public static async Task<List<Tag>> GetTagsByTask(int taskID)
     {
-        TaskItem? task = await GetTaskByID(taskID);
-
-        if (task is null)
-        {
-            throw new InexistentTaskException();
-        }
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.TaskTagLinks
@@ -335,13 +319,6 @@ static public class DomainService
 
     public static async Task<List<Tag>> GetTagsByName(int projectID, string tagName)
     {
-        Project? project = await GetProjectByID(projectID);
-
-        if (project is null)
-        {
-            throw new InexistentProjectException();
-        }
-        
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Tags
@@ -388,13 +365,6 @@ static public class DomainService
 
     public static async Task CreateTask(int projectID, string taskName, string taskDescription, TaskItemStatus taskStatus, TaskItemPriority taskPriority, DateTime? taskDueDate)
     {
-        Project? project = await GetProjectByID(projectID);
-        
-        if (project is null)
-        {
-            throw new InexistentProjectException();
-        }
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             bool isDuplicate = await context.Tasks
@@ -413,13 +383,6 @@ static public class DomainService
 
     public static async Task CreateTag(int projectID, string tagName)
     {
-        Project? project = await GetProjectByID(projectID);
-
-        if (project is null)
-        {
-            throw new InexistentProjectException();
-        }
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             bool isDuplicate = await context.Tags
@@ -438,20 +401,6 @@ static public class DomainService
 
     public static async Task AssignProjectToFolder(int folderID, int projectID)
     {
-        Folder? folder = await GetFolderByID(folderID);
-        
-        if (folder is null)
-        {
-            throw new InexistentFolderException();
-        }
-
-        Project? project = await GetProjectByID(projectID);
-
-        if (project is null)
-        {
-            throw new InexistentProjectException();
-        }
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             bool isDuplicate = await context.FolderProjectLinks
@@ -468,20 +417,6 @@ static public class DomainService
 
     public static async Task RemoveProjectFromFolder(int folderID, int projectID)
     {
-        Folder? folder = await GetFolderByID(folderID);
-        
-        if (folder is null)
-        {
-            throw new InexistentFolderException();
-        }
-
-        Project? project = await GetProjectByID(projectID);
-
-        if (project is null)
-        {
-            throw new InexistentProjectException();
-        }
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             bool linkExists = await context.FolderProjectLinks
@@ -498,25 +433,6 @@ static public class DomainService
 
     public static async Task AssignTagToTask(int taskID, int tagID)
     {
-        TaskItem? task = await GetTaskByID(taskID);
-
-        if (task is null)
-        {
-            throw new InexistentTaskException();
-        }
-
-        Tag? tag = await GetTagByID(tagID);
-
-        if (tag is null)
-        {
-            throw new InexistentTagException();
-        }
-
-        if (tag.ProjectID != task.ProjectID)
-        {
-            throw new NonmatchingTaskTagException();
-        }
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             bool isDuplicate = await context.TaskTagLinks
@@ -533,20 +449,6 @@ static public class DomainService
 
     public static async Task RemoveTagFromTask(int taskID, int tagID)
     {
-        TaskItem? task = await GetTaskByID(taskID);
-        
-        if (task is null)
-        {
-            throw new InexistentTaskException();
-        }
-
-        Tag? tag = await GetTagByID(tagID);
-
-        if (tag is null)
-        {
-            throw new InexistentTagException();
-        }
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             bool linkExists = await context.TaskTagLinks
@@ -568,12 +470,7 @@ static public class DomainService
             switch (localChange.TargetType)
             {
                 case DomainEntityType.Folder:
-                    Folder? folder = await GetFolderByID(localChange.TargetID);
-
-                    if (folder is null)
-                    {
-                        throw new InexistentFolderException();
-                    }
+                    var folder = await GetFolderByID(localChange.TargetID);
 
                     if (localChange.Name is not null)
                     {
@@ -589,12 +486,7 @@ static public class DomainService
                     break;
                 
                 case DomainEntityType.Project:
-                    Project? project = await GetProjectByID(localChange.TargetID);
-
-                    if (project is null)
-                    {
-                        throw new InexistentProjectException();
-                    }
+                    var project = await GetProjectByID(localChange.TargetID);
 
                     if (localChange.Name is not null)
                     {
@@ -632,12 +524,7 @@ static public class DomainService
                     break;
                 
                 case DomainEntityType.Task:
-                    TaskItem? task = await GetTaskByID(localChange.TargetID);
-
-                    if (task is null)
-                    {
-                        throw new InexistentTaskException();
-                    }
+                    var task = await GetTaskByID(localChange.TargetID);
 
                     if (localChange.Name is not null)
                     {
@@ -706,12 +593,7 @@ static public class DomainService
                     break;
                 
                 case DomainEntityType.Tag:
-                    Tag? tag = await GetTagByID(localChange.TargetID);
-
-                    if (tag is null)
-                    {
-                        throw new InexistentTagException();
-                    }
+                    var tag = await GetTagByID(localChange.TargetID);
 
                     if (localChange.Name is not null)
                     {
@@ -814,14 +696,7 @@ static public class DomainService
     {
         using (var context = AppDbContextFactory.CreateContext())
         {
-            Project? project = await context.Projects
-                .Where(p => p.ID == projectID)
-                .SingleOrDefaultAsync();
-            
-            if (project is null)
-            {
-                throw new InexistentProjectException();
-            }
+            var project = await GetProjectByID(projectID);
 
             string newProjectName = project.Name;
             bool isDuplicate = await context.Projects

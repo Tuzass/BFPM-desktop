@@ -29,16 +29,8 @@ public class AssignTagToTaskCommand : ICommand
         var task = await DomainService.GetTaskByID(TaskID);
         var tag = await DomainService.GetTagByID(TagID);
 
-        if (task is null || tag is null)
-        {
-            throw new UnauthorizedAccessException();
-        }
-
-        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
-        var taskProject = projects.SingleOrDefault(p => p.ID == task.ProjectID);
-        var tagProject = projects.SingleOrDefault(p => p.ID == tag.ProjectID);
-
-        if (taskProject is null || tagProject is null)
+        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, task.ProjectID)
+         || !await DomainService.IsUserAssignedToProject(currentUser.ID, tag.ProjectID))
         {
             throw new UnauthorizedAccessException();
         }
@@ -48,7 +40,7 @@ public class AssignTagToTaskCommand : ICommand
             throw new NonmatchingTaskTagException();
         }
 
-        if (taskProject.RemoteID is not null)
+        if (!await DomainService.IsProjectLocal(task.ProjectID))
         {
             throw new NonlocalChangeException();
         }

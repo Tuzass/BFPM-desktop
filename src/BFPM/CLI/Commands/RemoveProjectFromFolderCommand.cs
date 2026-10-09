@@ -25,18 +25,12 @@ public class RemoveProjectFromFolderCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        var folders = await DomainService.GetFoldersByUser(currentUser.ID);
-        var folder = folders.SingleOrDefault(f => f.ID == FolderID);
-
-        if (folder is null)
+        if (!await DomainService.IsFolderOwnedByUser(currentUser.ID, FolderID))
         {
             throw new UnauthorizedAccessException();
         }
 
-        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
-        var project = projects.SingleOrDefault(p => p.ID == ProjectID);
-
-        if (project is null)
+        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, ProjectID))
         {
             throw new UnauthorizedAccessException();
         }

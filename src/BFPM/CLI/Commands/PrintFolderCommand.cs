@@ -23,14 +23,12 @@ public class PrintFolderCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
         
-        var folders = await DomainService.GetFoldersByUser(currentUser.ID);
-        var folder = folders.SingleOrDefault(f => f.ID == FolderID);
-
-        if (folder is null)
+        if (!await DomainService.IsFolderOwnedByUser(currentUser.ID, FolderID))
         {
-            throw new Services.Exceptions.UnauthorizedAccessException();
+            throw new UnauthorizedAccessException();
         }
 
+        var folder = await DomainService.GetFolderByID(FolderID);
         Console.WriteLine(Utils.FolderToString(folder));
     }
 }

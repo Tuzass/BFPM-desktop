@@ -23,19 +23,11 @@ public class PrintTaskCommand : ICommand
     {
         var task = await DomainService.GetTaskByID(TaskID);
 
-        if (task is null)
-        {
-            throw new Services.Exceptions.UnauthorizedAccessException();
-        }
-
         var currentUser = await UserService.GetCurrentUser();
 
-        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
-        var project = projects.SingleOrDefault(p => p.ID == task.ProjectID);
-
-        if (project is null)
+        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, task.ProjectID))
         {
-            throw new Services.Exceptions.UnauthorizedAccessException();
+            throw new UnauthorizedAccessException();
         }
 
         Console.WriteLine(Utils.TaskToString(task));

@@ -25,15 +25,12 @@ public class NewTaskCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
-        var project = projects.SingleOrDefault(p => p.ID == ProjectID);
-
-        if (project is null)
+        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, ProjectID))
         {
             throw new UnauthorizedAccessException();
         }
 
-        if (project.RemoteID is not null)
+        if (!await DomainService.IsProjectLocal(ProjectID))
         {
             throw new NonlocalChangeException();
         }

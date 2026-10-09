@@ -24,14 +24,12 @@ public class EditFolderCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        var folders = await DomainService.GetFoldersByUser(currentUser.ID);
-        var folder = folders.SingleOrDefault(f => f.ID == FolderID);
-
-        if (folder is null)
+        if (!await DomainService.IsFolderOwnedByUser(currentUser.ID, FolderID))
         {
             throw new UnauthorizedAccessException();
         }
 
+        var folder = await DomainService.GetFolderByID(FolderID);
         var localChange = await FolderEditPage.Run(folder);
         // await DomainService.ApplyLocalChange(localChange);
     }
