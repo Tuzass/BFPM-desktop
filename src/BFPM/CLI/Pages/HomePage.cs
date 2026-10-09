@@ -39,34 +39,38 @@ Type 'help' to see the available commands";
                 continue;
             }
 
-            catch (UnknownTokenException)
+            catch (Exception e)
             {
-                Console.WriteLine("Unknown token; please try 'help' to see the available commands and how to use them correctly!");
-            }
-
-            catch (UnexpectedTokenException)
-            {
-                Console.WriteLine("Unexpected token; please try 'help' to see the available commands and how to use them correctly!");
-            }
-
-            catch (InvalidIdException)
-            {
-                Console.WriteLine("Invalid ID(s)!");
-            }
-
-            catch (NonlocalChangeException)
-            {
-                Console.WriteLine("Can't make changes to nonlocal projects through the CLI! Please launch the usual BFPM application to make such changes!");
-            }
-
-            catch (Services.Exceptions.UnauthorizedAccessException)
-            {
-                Console.WriteLine("The current user is not authorized to perform this operation!");
-            }
-
-            catch (NoCurrentUserException)
-            {
-                Console.WriteLine("No user is currently selected! Please do 'switch' to select a user!");
+                switch (e)
+                {
+                    case Services.Exceptions.UnauthorizedAccessException:
+                    case InexistentFolderException:
+                    case InexistentProjectException:
+                    case InexistentTaskException:
+                    case InexistentTagException:
+                        Console.WriteLine("The current user is not authorized to perform this operation!");
+                        break;
+                    
+                    case UnknownTokenException:
+                        Console.WriteLine("Unknown token; please try 'help' to see the available commands and how to use them correctly!");
+                        break;
+                    
+                    case UnexpectedTokenException:
+                        Console.WriteLine("Unexpected token; please try 'help' to see the available commands and how to use them correctly!");
+                        break;
+                    
+                    case InvalidIdException:
+                        Console.WriteLine("Invalid ID(s)!");
+                        break;
+                    
+                    case NonlocalChangeException:
+                        Console.WriteLine("Can't make changes to nonlocal projects through the CLI! Please launch the usual BFPM application to make such changes!");
+                        break;
+                    
+                    case NoCurrentUserException:
+                        Console.WriteLine("No user is currently selected! Please do 'switch' to select a user!");
+                        break;
+                }
             }
         }
 
