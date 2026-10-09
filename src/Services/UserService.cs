@@ -82,7 +82,7 @@ static public class UserService
         await RemoveRegisteredUser(userID);
     }
 
-    public static async Task<User?> GetCurrentUser()
+    public static async Task<User> GetCurrentUser()
     {
         var settings = SettingsService.GetSettings();
 
@@ -94,13 +94,20 @@ static public class UserService
 
         if (!int.TryParse(idString, out int currentUserID))
         {
-            return null;
+            throw new NoCurrentUserException();
         }
 
         using (var context = AppDbContextFactory.CreateContext())
         {
-            return await context.Users
+            var user = await context.Users
                 .SingleOrDefaultAsync(u => u.ID == currentUserID);
+            
+            if (user is null)
+            {
+                throw new NoCurrentUserException();
+            }
+
+            return user;
         }
     }
 
@@ -141,7 +148,7 @@ static public class UserService
         {
             var currentUser = await GetCurrentUser();
 
-            if (currentUser is not null && currentUser.ID == userID)
+            if (currentUser.ID == userID)
             {
                 Logoff();
             }

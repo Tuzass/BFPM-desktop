@@ -12,12 +12,7 @@ static public class DomainService
 {
     public static async Task<List<Folder>> GetCurrentUserFolders()
     {
-        User? currentUser = await UserService.GetCurrentUser();
-
-        if (currentUser is null)
-        {
-            throw new NoCurrentUserException();
-        }
+        var currentUser = await UserService.GetCurrentUser();
 
         using (var context = AppDbContextFactory.CreateContext())
         {
@@ -29,12 +24,7 @@ static public class DomainService
 
     public static async Task<List<Project>> GetCurrentUserProjects()
     {
-        User? currentUser = await UserService.GetCurrentUser();
-
-        if (currentUser is null)
-        {
-            throw new NoCurrentUserException();
-        }
+        var currentUser = await UserService.GetCurrentUser();
 
         using (var context = AppDbContextFactory.CreateContext())
         {
@@ -47,11 +37,6 @@ static public class DomainService
     public static async Task<List<Project>> GetCurrentUserProjectsNotAssignedToFolder(int folderID)
     {
         var currentUser = await UserService.GetCurrentUser();
-
-        if (currentUser is null)
-        {
-            throw new NoCurrentUserException();
-        }
 
         using (var context = AppDbContextFactory.CreateContext())
         {
@@ -67,11 +52,6 @@ static public class DomainService
     {
         User? currentUser = await UserService.GetCurrentUser();
 
-        if (currentUser is null)
-        {
-            throw new NoCurrentUserException();
-        }
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Folders
@@ -82,11 +62,6 @@ static public class DomainService
     public static async Task<bool> IsCurrentUserAssignedToProject(int projectID)
     {
         User? currentUser = await UserService.GetCurrentUser();
-
-        if (currentUser is null)
-        {
-            throw new NoCurrentUserException();
-        }
 
         using (var context = AppDbContextFactory.CreateContext())
         {
@@ -389,11 +364,6 @@ static public class DomainService
     {
         User? currentUser = await UserService.GetCurrentUser();
 
-        if (currentUser is null)
-        {
-            throw new NoCurrentUserException();
-        }
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             bool isDuplicate = await context.Folders
@@ -413,11 +383,6 @@ static public class DomainService
     public static async Task CreateProject(string projectName, string projectDescription, ProjectStatus projectStatus)
     {
         User? currentUser = await UserService.GetCurrentUser();
-
-        if (currentUser is null)
-        {
-            throw new NoCurrentUserException();
-        }
 
         using (var context = AppDbContextFactory.CreateContext())
         {

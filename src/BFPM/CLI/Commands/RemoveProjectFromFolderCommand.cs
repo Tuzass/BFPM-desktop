@@ -23,13 +23,6 @@ public class RemoveProjectFromFolderCommand : ICommand
 
     public async Task Execute()
     {
-        var currentUser = await UserService.GetCurrentUser();
-
-        if (currentUser is null)
-        {
-            throw new NoCurrentUserException();
-        }
-
         var folders = await DomainService.GetCurrentUserFolders();
         var folder = folders.SingleOrDefault(f => f.ID == FolderID);
 

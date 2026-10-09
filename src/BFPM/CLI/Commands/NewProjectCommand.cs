@@ -15,12 +15,6 @@ public class NewProjectCommand : ICommand
     public async Task Execute()
     {
         var currentUser = await UserService.GetCurrentUser();
-
-        if (currentUser is null)
-        {
-            throw new NoCurrentUserException();
-        }
-
         var project = await ProjectCreationPage.Run(currentUser.ID);
         // await DomainService.CreateProject(project.Name, project.Description, project.Status);
     }
