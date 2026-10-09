@@ -17,7 +17,7 @@ sealed class Program
             return;
         }
 
-        if (args.Contains("--nogui"))
+        if (args.Contains("--no-gui"))
         {
             CLI.Pages.HomePage.Run(args);
         }
