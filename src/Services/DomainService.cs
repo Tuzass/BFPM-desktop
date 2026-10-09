@@ -63,6 +63,22 @@ static public class DomainService
         }
     }
 
+    public static async Task<bool> IsFolderOwnedByCurrentUser(int folderID)
+    {
+        User? currentUser = await UserService.GetCurrentUser();
+
+        if (currentUser is null)
+        {
+            throw new NoCurrentUserException();
+        }
+
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            return await context.Folders
+                .AnyAsync(f => f.ID == folderID && f.OwnerID == currentUser.ID);
+        }
+    }
+
     public static async Task<bool> IsCurrentUserAssignedToProject(int projectID)
     {
         User? currentUser = await UserService.GetCurrentUser();
@@ -76,6 +92,42 @@ static public class DomainService
         {
             return await context.Projects
                 .AnyAsync(p => p.ID == projectID && p.AssignedUserID == currentUser.ID);
+        }
+    }
+
+    public static async Task<bool> IsFolderDuplicate(int ownerID, string folderName)
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            return await context.Folders
+                .AnyAsync(f => f.OwnerID == ownerID && f.Name == folderName);
+        }
+    }
+
+    public static async Task<bool> IsProjectDuplicate(int ownerID, string projectName)
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            return await context.Projects
+                .AnyAsync(p => p.OwnerID == ownerID && p.Name == projectName);
+        }
+    }
+
+    public static async Task<bool> IsTaskDuplicate(int projectID, string taskName)
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            return await context.Tasks
+                .AnyAsync(t => t.ProjectID == projectID && t.Name == taskName);
+        }
+    }
+
+    public static async Task<bool> IsTagDuplicate(int projectID, string tagName)
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            return await context.Tags
+                .AnyAsync(t => t.ProjectID == projectID && t.Name == tagName);
         }
     }
 
