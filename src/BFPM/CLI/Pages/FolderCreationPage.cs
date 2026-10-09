@@ -106,7 +106,7 @@ public class FolderCreationPage
     private static void PrintEditingKeyInstructions()
     {
         Console.SetCursorPosition(0, 5);
-        Console.Write(@"ESC | Finishes editing
+        Console.Write(@"ESC/Enter | Finishes editing
 Up | Moves to next field
 Down/Tab | Moves to previous field
 Left/Right | Moves cursor within field");
