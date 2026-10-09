@@ -20,9 +20,11 @@ public class CopyProjectCommand : ICommand
 
     public async Task Execute()
     {
-        if (await DomainService.IsCurrentUserAssignedToProject(ProjectID))
+        var currentUser = await UserService.GetCurrentUser();
+
+        if (await DomainService.IsUserAssignedToProject(currentUser.ID, ProjectID))
         {
-            await DomainService.CopyProject(ProjectID);
+            await DomainService.CopyProject(currentUser.ID, ProjectID);
         }
 
         throw new UnauthorizedAccessException();

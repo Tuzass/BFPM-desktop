@@ -24,6 +24,8 @@ public class AssignTagToTaskCommand : ICommand
 
     public async Task Execute()
     {
+        var currentUser = await UserService.GetCurrentUser();
+
         var task = await DomainService.GetTaskByID(TaskID);
         var tag = await DomainService.GetTagByID(TagID);
 
@@ -32,7 +34,7 @@ public class AssignTagToTaskCommand : ICommand
             throw new UnauthorizedAccessException();
         }
 
-        var projects = await DomainService.GetCurrentUserProjects();
+        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
         var taskProject = projects.SingleOrDefault(p => p.ID == task.ProjectID);
         var tagProject = projects.SingleOrDefault(p => p.ID == tag.ProjectID);
 

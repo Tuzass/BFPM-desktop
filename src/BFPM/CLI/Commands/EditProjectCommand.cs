@@ -23,7 +23,9 @@ public class EditProjectCommand : ICommand
 
     public async Task Execute()
     {
-        var projects = await DomainService.GetCurrentUserProjects();
+        var currentUser = await UserService.GetCurrentUser();
+
+        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
         var project = projects.SingleOrDefault(p => p.ID == ProjectID);
 
         if (project is null)

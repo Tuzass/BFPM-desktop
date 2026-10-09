@@ -23,7 +23,9 @@ public class AssignProjectToFolderCommand : ICommand
 
     public async Task Execute()
     {
-        var folders = await DomainService.GetCurrentUserFolders();
+        var currentUser = await UserService.GetCurrentUser();
+
+        var folders = await DomainService.GetFoldersByUser(currentUser.ID);
         var folder = folders.SingleOrDefault(f => f.ID == FolderID);
 
         if (folder is null)
@@ -31,7 +33,7 @@ public class AssignProjectToFolderCommand : ICommand
             throw new UnauthorizedAccessException();
         }
 
-        var projects = await DomainService.GetCurrentUserProjects();
+        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
         var project = projects.SingleOrDefault(p => p.ID == ProjectID);
 
         if (project is null)

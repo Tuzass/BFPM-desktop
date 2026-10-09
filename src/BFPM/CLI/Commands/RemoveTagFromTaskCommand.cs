@@ -32,7 +32,9 @@ public class RemoveTagFromTaskCommand : ICommand
             throw new UnauthorizedAccessException();
         }
 
-        var projects = await DomainService.GetCurrentUserProjects();
+        var currentUser = await UserService.GetCurrentUser();
+
+        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
         var taskProject = projects.SingleOrDefault(p => p.ID == task.ProjectID);
         var tagProject = projects.SingleOrDefault(p => p.ID == tag.ProjectID);
 

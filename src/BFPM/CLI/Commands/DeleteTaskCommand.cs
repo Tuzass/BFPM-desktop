@@ -29,7 +29,9 @@ public class DeleteTaskCommand : ICommand
             throw new UnauthorizedAccessException();
         }
 
-        var projects = await DomainService.GetCurrentUserProjects();
+        var currentUser = await UserService.GetCurrentUser();
+
+        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
         var project = projects.SingleOrDefault(p => p.ID == task.ProjectID);
 
         if (project is null)

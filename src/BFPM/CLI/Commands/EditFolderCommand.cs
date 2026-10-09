@@ -22,7 +22,9 @@ public class EditFolderCommand : ICommand
 
     public async Task Execute()
     {
-        var folders = await DomainService.GetCurrentUserFolders();
+        var currentUser = await UserService.GetCurrentUser();
+
+        var folders = await DomainService.GetFoldersByUser(currentUser.ID);
         var folder = folders.SingleOrDefault(f => f.ID == FolderID);
 
         if (folder is null)

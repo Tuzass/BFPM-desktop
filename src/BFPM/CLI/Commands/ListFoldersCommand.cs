@@ -15,7 +15,8 @@ public class ListFoldersCommand : ICommand
 
     public async Task Execute()
     {
-        List<Folder> folders = await DomainService.GetCurrentUserFolders();
+        var currentUser = await UserService.GetCurrentUser();
+        var folders = await DomainService.GetFoldersByUser(currentUser.ID);
 
         if (folders.Count == 0)
         {

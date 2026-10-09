@@ -10,63 +10,21 @@ namespace Services;
 
 static public class DomainService
 {
-    public static async Task<List<Folder>> GetCurrentUserFolders()
+    public static async Task<bool> IsFolderOwnedByUser(int userID, int folderID)
     {
-        var currentUser = await UserService.GetCurrentUser();
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Folders
-                .Where(f => f.OwnerID == currentUser.ID)
-                .ToListAsync();
+                .AnyAsync(f => f.ID == folderID && f.OwnerID == userID);
         }
     }
 
-    public static async Task<List<Project>> GetCurrentUserProjects()
+    public static async Task<bool> IsUserAssignedToProject(int userID, int projectID)
     {
-        var currentUser = await UserService.GetCurrentUser();
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Projects
-                .Where(p => p.AssignedUserID == currentUser.ID)
-                .ToListAsync();
-        }
-    }
-
-    public static async Task<List<Project>> GetCurrentUserProjectsNotAssignedToFolder(int folderID)
-    {
-        var currentUser = await UserService.GetCurrentUser();
-
-        using (var context = AppDbContextFactory.CreateContext())
-        {
-            return await context.Projects
-                .Where(p => p.AssignedUserID == currentUser.ID)
-                .Where(p => !context.FolderProjectLinks
-                    .Any(l => l.FolderID == folderID && l.ProjectID == p.ID))
-                .ToListAsync();
-        }
-    }
-
-    public static async Task<bool> IsFolderOwnedByCurrentUser(int folderID)
-    {
-        User? currentUser = await UserService.GetCurrentUser();
-
-        using (var context = AppDbContextFactory.CreateContext())
-        {
-            return await context.Folders
-                .AnyAsync(f => f.ID == folderID && f.OwnerID == currentUser.ID);
-        }
-    }
-
-    public static async Task<bool> IsCurrentUserAssignedToProject(int projectID)
-    {
-        User? currentUser = await UserService.GetCurrentUser();
-
-        using (var context = AppDbContextFactory.CreateContext())
-        {
-            return await context.Projects
-                .AnyAsync(p => p.ID == projectID && p.AssignedUserID == currentUser.ID);
+                .AnyAsync(p => p.ID == projectID && p.AssignedUserID == userID);
         }
     }
 
@@ -192,6 +150,16 @@ static public class DomainService
         }
     }
 
+    public static async Task<List<Folder>> GetFoldersByUser(int userID)
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            return await context.Folders
+                .Where(f => f.OwnerID == userID)
+                .ToListAsync();
+        }
+    }
+
     public static async Task<List<Project>> GetProjectsByFolder(int folderID)
     {
         using (var context = AppDbContextFactory.CreateContext())
@@ -203,6 +171,28 @@ static public class DomainService
                     l => l.ProjectID,
                     p => p.ID,
                     (l, p) => p)
+                .ToListAsync();
+        }
+    }
+
+    public static async Task<List<Project>> GetProjectsByUser(int userID)
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            return await context.Projects
+                .Where(p => p.AssignedUserID == userID)
+                .ToListAsync();
+        }
+    }
+
+    public static async Task<List<Project>> GetUserProjectsNotAssignedToFolder(int userID, int folderID)
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            return await context.Projects
+                .Where(p => p.AssignedUserID == userID)
+                .Where(p => !context.FolderProjectLinks
+                    .Any(l => l.FolderID == folderID && l.ProjectID == p.ID))
                 .ToListAsync();
         }
     }
@@ -360,41 +350,37 @@ static public class DomainService
         }
     }
 
-    public static async Task CreateFolder(string folderName, string folderDescription)
+    public static async Task CreateFolder(int ownerID, string folderName, string folderDescription)
     {
-        User? currentUser = await UserService.GetCurrentUser();
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             bool isDuplicate = await context.Folders
-                .AnyAsync(f => f.OwnerID == currentUser.ID && f.Name == folderName);
+                .AnyAsync(f => f.OwnerID == ownerID && f.Name == folderName);
             
             if (isDuplicate)
             {
                 throw new DuplicateFolderException();
             }
 
-            Folder newFolder = new(null, currentUser.ID, folderName, folderDescription);
+            Folder newFolder = new(null, ownerID, folderName, folderDescription);
             context.Folders.Add(newFolder);
             await context.SaveChangesAsync();
         }
     }
 
-    public static async Task CreateProject(string projectName, string projectDescription, ProjectStatus projectStatus)
+    public static async Task CreateProject(int ownerID, string projectName, string projectDescription, ProjectStatus projectStatus)
     {
-        User? currentUser = await UserService.GetCurrentUser();
-
         using (var context = AppDbContextFactory.CreateContext())
         {
             bool isDuplicate = await context.Projects
-                .AnyAsync(p => p.OwnerID == currentUser.ID && p.Name == projectName);
+                .AnyAsync(p => p.OwnerID == ownerID && p.Name == projectName);
             
             if (isDuplicate)
             {
                 throw new DuplicateProjectException();
             }
 
-            Project newProject = new(null, null, currentUser.ID, currentUser.ID, projectName, projectDescription, projectStatus, null, null);
+            Project newProject = new(null, null, ownerID, ownerID, projectName, projectDescription, projectStatus, null, null);
             context.Projects.Add(newProject);
             await context.SaveChangesAsync();
         }
@@ -824,15 +810,8 @@ static public class DomainService
         }
     }
 
-    public static async Task CopyProject(int projectID, int? remoteID = null)
+    public static async Task CopyProject(int newOwnerID, int projectID, int? remoteID = null)
     {
-        User? currentUser = await UserService.GetCurrentUser();
-
-        if (currentUser is null)
-        {
-            throw new NoCurrentUserException();
-        }
-        
         using (var context = AppDbContextFactory.CreateContext())
         {
             Project? project = await context.Projects
@@ -846,16 +825,16 @@ static public class DomainService
 
             string newProjectName = project.Name;
             bool isDuplicate = await context.Projects
-                .AnyAsync(p => p.OwnerID == currentUser.ID && p.Name == project.Name);     
+                .AnyAsync(p => p.OwnerID == newOwnerID && p.Name == project.Name);     
 
             while (isDuplicate)
             {
                 newProjectName += " - copy";
                 isDuplicate = await context.Projects
-                .AnyAsync(p => p.OwnerID == currentUser.ID && p.Name == newProjectName);
+                .AnyAsync(p => p.OwnerID == newOwnerID && p.Name == newProjectName);
             }
 
-            Project newProject = new(null, remoteID, currentUser.ID, currentUser.ID, newProjectName, project.Description, project.Status, null, null);
+            Project newProject = new(null, remoteID, newOwnerID, newOwnerID, newProjectName, project.Description, project.Status, null, null);
 
             if (project.Status == ProjectStatus.Completed)
             {

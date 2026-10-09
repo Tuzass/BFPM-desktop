@@ -1,5 +1,7 @@
+using System;
 using System.Threading.Tasks;
 using BFPM.CLI.Pages;
+using Domain.Entities;
 using Services;
 using Services.Exceptions;
 
@@ -14,13 +16,14 @@ public class NewFolderCommand : ICommand
     public async Task Execute()
     {
         var currentUser = await UserService.GetCurrentUser();
+        var folder = await FolderCreationPage.Run(currentUser.ID);
 
-        if (currentUser is null)
+        if (folder is null)
         {
-            throw new NoCurrentUserException();
+            return;
         }
 
-        var folder = await FolderCreationPage.Run(currentUser.ID);
-        // await DomainService.CreateFolder(folder.Name, folder.Description);
+        Console.WriteLine($"New folder created\nName: {folder.Name}, Description: {folder.Description}");
+        await DomainService.CreateFolder(currentUser.ID, folder.Name, folder.Description);
     }
 }
