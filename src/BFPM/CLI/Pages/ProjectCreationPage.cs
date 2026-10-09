@@ -202,6 +202,7 @@ Left/Right | Moves cursor within field");
                     if (!statusOptions.Contains(fieldContents[2]))
                     {
                         PrintErrorMessage("Please choose a number from 1-4 for the project status!");
+                        continue;
                     }
 
                     if (await DomainService.IsFolderDuplicate(currentUserID, fieldContents[0]))

@@ -1,9 +1,8 @@
-using System.Linq;
+using System;
 using System.Threading.Tasks;
 using BFPM.CLI.Exceptions;
 using BFPM.CLI.Pages;
 using Services;
-using Services.Exceptions;
 
 namespace BFPM.CLI.Commands;
 
@@ -27,7 +26,7 @@ public class NewTagCommand : ICommand
 
         if (!await DomainService.IsUserAssignedToProject(currentUser.ID, ProjectID))
         {
-            throw new UnauthorizedAccessException();
+            throw new Services.Exceptions.UnauthorizedAccessException();
         }
 
         if (!await DomainService.IsProjectLocal(ProjectID))
@@ -36,6 +35,13 @@ public class NewTagCommand : ICommand
         }
 
         var task = await TagCreationPage.Run(ProjectID);
-        // await DomainService.CreateTag(ProjectID, task.Name);
+
+        if (task is null)
+        {
+            return;
+        }
+
+        Console.WriteLine($"New tag created\nName: {task.Name}");
+        await DomainService.CreateTag(currentUser.ID, task.Name);
     }
 }
