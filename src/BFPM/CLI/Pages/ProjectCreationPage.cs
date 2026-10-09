@@ -146,8 +146,6 @@ Left/Right | Moves cursor within field");
 
     public static async Task<Project?> Run(int currentUserID)
     {
-        var currentUser = await UserService.GetCurrentUser();
-
         List<string> fieldNames = ["Name", "Description", "Status"];
         List<string> fieldContents = ["", "", ""];
         List<string> statusOptions = ["1", "2", "3", "4"];
@@ -206,7 +204,7 @@ Left/Right | Moves cursor within field");
                         PrintErrorMessage("Please choose a number from 1-4 for the project status!");
                     }
 
-                    if (await DomainService.IsFolderDuplicate(currentUser.ID, fieldContents[0]))
+                    if (await DomainService.IsFolderDuplicate(currentUserID, fieldContents[0]))
                     {
                         PrintErrorMessage($"Current user already has a project named '{fieldContents[0]}' (case-insensitive)!");
                         continue;

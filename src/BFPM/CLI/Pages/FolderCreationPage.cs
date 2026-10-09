@@ -141,8 +141,6 @@ Left/Right | Moves cursor within field");
 
     public static async Task<Folder?> Run(int currentUserID)
     {
-        var currentUser = await UserService.GetCurrentUser();
-
         List<string> fieldNames = ["Name", "Description"];
         List<string> fieldContents = ["", ""];
         int fieldCount = 2;
@@ -195,7 +193,7 @@ Left/Right | Moves cursor within field");
                         continue;
                     }
 
-                    if (await DomainService.IsFolderDuplicate(currentUser.ID, fieldContents[0]))
+                    if (await DomainService.IsFolderDuplicate(currentUserID, fieldContents[0]))
                     {
                         PrintErrorMessage($"Current user already has a folder named '{fieldContents[0]}' (case-insensitive)!");
                         continue;
