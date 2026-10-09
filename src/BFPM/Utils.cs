@@ -1,9 +1,13 @@
+using System.Text.RegularExpressions;
 using Domain.Entities;
 
 namespace BFPM;
 
-public class Utils
+public partial class Utils
 {
+    [GeneratedRegex(@"^[\p{L}\p{Nd}\s()\-]+$")]
+    private static partial Regex DomainEntityNameRegex();
+
     public static string[] ParseWords(string inputString)
     {
         string[] input = inputString.Split(' ');
@@ -62,5 +66,20 @@ Completed at: {task.CompletedAt}";
     {
         return $@"ID: {tag.ID}
 Name: {tag.Name}";
+    }
+
+    public static bool ValidateDomainEntityName(string name)
+    {
+        if (name.Length < 3 || name.Length > 50)
+        {
+            return false;
+        }
+
+        return DomainEntityNameRegex().IsMatch(name);
+    }
+
+    public static bool ValidateDomainEntityDescription(string description)
+    {
+        return description.Length < 2000;
     }
 }
