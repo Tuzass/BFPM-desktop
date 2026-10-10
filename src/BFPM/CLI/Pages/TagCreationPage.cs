@@ -163,7 +163,7 @@ Left/Right | Moves cursor within field");
                         continue;
                     }
 
-                    if (await DomainService.IsTagDuplicate(currentUser.ID, name.Trim()))
+                    if (await DomainService.IsTagDuplicate(projectID, name.Trim()))
                     {
                         PrintErrorMessage($"Project already has a tag named '{name.Trim()}' (case-insensitive)!");
                         continue;
