@@ -157,15 +157,15 @@ Left/Right | Moves cursor within field");
 
                 if (optionIndex == 1)
                 {
-                    if (!Utils.ValidateDomainEntityName(name))
+                    if (!Utils.ValidateDomainEntityName(name.Trim()))
                     {
                         PrintErrorMessage("Please make sure the tag's name has 3-50 characters and contains only letters, numbers, (, ), -, and spaces!");
                         continue;
                     }
 
-                    if (await DomainService.IsTagDuplicate(currentUser.ID, name))
+                    if (await DomainService.IsTagDuplicate(currentUser.ID, name.Trim()))
                     {
-                        PrintErrorMessage($"Project already has a tag named '{name}' (case-insensitive)!");
+                        PrintErrorMessage($"Project already has a tag named '{name.Trim()}' (case-insensitive)!");
                         continue;
                     }
 
@@ -204,7 +204,7 @@ Left/Right | Moves cursor within field");
                             Console.CursorVisible = true;
                             Console.Write("\x1b[?7h");
                             Console.Write("\x1b[?1049l");
-                            return new(null, projectID, name, null);
+                            return new(null, projectID, name.Trim(), null);
                         }
                     }
 

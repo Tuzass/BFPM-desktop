@@ -181,21 +181,21 @@ Left/Right | Moves cursor within field");
 
                 if (optionIndex == 1)
                 {
-                    if (!Utils.ValidateDomainEntityName(fieldContents[0]))
+                    if (!Utils.ValidateDomainEntityName(fieldContents[0].Trim()))
                     {
                         PrintErrorMessage("Please make sure the folder's name has 3-50 characters and contains only letters, numbers, (, ), -, and spaces!");
                         continue;
                     }
 
-                    if (!Utils.ValidateDomainEntityDescription(fieldContents[1]))
+                    if (!Utils.ValidateDomainEntityDescription(fieldContents[1].Trim()))
                     {
                         PrintErrorMessage("Please make sure it is less than 2000 characters long!");
                         continue;
                     }
 
-                    if (await DomainService.IsFolderDuplicate(currentUserID, fieldContents[0]))
+                    if (await DomainService.IsFolderDuplicate(currentUserID, fieldContents[0].Trim()))
                     {
-                        PrintErrorMessage($"Current user already has a folder named '{fieldContents[0]}' (case-insensitive)!");
+                        PrintErrorMessage($"Current user already has a folder named '{fieldContents[0].Trim()}' (case-insensitive)!");
                         continue;
                     }
 
@@ -234,7 +234,7 @@ Left/Right | Moves cursor within field");
                             Console.CursorVisible = true;
                             Console.Write("\x1b[?7h");
                             Console.Write("\x1b[?1049l");
-                            return new(null, currentUserID, fieldContents[0], fieldContents[1], null);
+                            return new(null, currentUserID, fieldContents[0].Trim(), fieldContents[1].Trim(), null);
                         }
                     }
 
