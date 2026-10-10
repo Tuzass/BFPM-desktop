@@ -28,21 +28,21 @@ static public class DomainService
         }
     }
 
-    public static async Task<bool> IsFolderDuplicate(int ownerID, string folderName)
+    public static async Task<bool> IsFolderDuplicate(int ownerID, string folderName, int? folderID = null)
     {
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Folders
-                .AnyAsync(f => f.OwnerID == ownerID && f.Name == folderName);
+                .AnyAsync(f => f.ID != folderID && f.OwnerID == ownerID && f.Name == folderName);
         }
     }
 
-    public static async Task<bool> IsProjectDuplicate(int ownerID, string projectName)
+    public static async Task<bool> IsProjectDuplicate(int ownerID, string projectName, int? projectID = null)
     {
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Projects
-                .AnyAsync(p => p.OwnerID == ownerID && p.Name == projectName);
+                .AnyAsync(p => p.ID != projectID && p.OwnerID == ownerID && p.Name == projectName);
         }
     }
 
@@ -52,21 +52,21 @@ static public class DomainService
         return (project.RemoteID is null);
     }
 
-    public static async Task<bool> IsTaskDuplicate(int projectID, string taskName)
+    public static async Task<bool> IsTaskDuplicate(int projectID, string taskName, int? taskID = null)
     {
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Tasks
-                .AnyAsync(t => t.ProjectID == projectID && t.Name == taskName);
+                .AnyAsync(t => t.ID != taskID && t.ProjectID == projectID && t.Name == taskName);
         }
     }
 
-    public static async Task<bool> IsTagDuplicate(int projectID, string tagName)
+    public static async Task<bool> IsTagDuplicate(int projectID, string tagName, int? tagID = null)
     {
         using (var context = AppDbContextFactory.CreateContext())
         {
             return await context.Tags
-                .AnyAsync(t => t.ProjectID == projectID && t.Name == tagName);
+                .AnyAsync(t => t.ID != tagID && t.ProjectID == projectID && t.Name == tagName);
         }
     }
 
