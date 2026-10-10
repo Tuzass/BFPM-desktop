@@ -1,4 +1,4 @@
-using System.Linq;
+using System;
 using System.Threading.Tasks;
 using BFPM.CLI.Pages;
 using Services;
@@ -26,11 +26,17 @@ public class EditFolderCommand : ICommand
 
         if (!await DomainService.IsFolderOwnedByUser(currentUser.ID, FolderID))
         {
-            throw new UnauthorizedAccessException();
+            throw new Services.Exceptions.UnauthorizedAccessException();
         }
 
-        var folder = await DomainService.GetFolderByID(FolderID);
-        var localChange = await FolderEditPage.Run(folder);
-        // await DomainService.ApplyLocalChange(localChange);
+        var localChange = await FolderEditPage.Run(currentUser.ID, FolderID);
+
+        if (localChange is null)
+        {
+            return;
+        }
+
+        Console.WriteLine($"Folder {FolderID} changed\nName: {localChange.Name}, Description: {localChange.Description}");
+        await DomainService.ApplyLocalChange(localChange);
     }
 }
