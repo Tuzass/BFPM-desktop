@@ -64,9 +64,9 @@ public class TaskItem
         return false;
     }
 
-    public bool ChangeDueDate(DateTime newDueDate)
+    public bool ChangeDueDate(DateTime? newDueDate)
     {
-        if (newDueDate < DateTime.UtcNow)
+        if (newDueDate is not null && newDueDate < DateTime.UtcNow)
         {
             return false;
         }
