@@ -31,6 +31,6 @@ public class AssignProjectToFolderCommand : ICommand
         var projects = await DomainService.GetProjectsByUser(currentUser.ID);
         var project = projects.SingleOrDefault(p => p.ID == ProjectID);
 
-        // await DomainService.AssignProjectToFolder(FolderID, ProjectID);
+        await DomainService.AssignProjectToFolder(FolderID, ProjectID);
     }
 }

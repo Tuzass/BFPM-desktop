@@ -45,6 +45,6 @@ public class AssignTagToTaskCommand : ICommand
             throw new NonlocalChangeException();
         }
 
-        // await DomainService.AssignTagToTask(TaskID, TagID);
+        await DomainService.AssignTagToTask(TaskID, TagID);
     }
 }

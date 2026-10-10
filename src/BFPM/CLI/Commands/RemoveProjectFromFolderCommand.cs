@@ -35,6 +35,6 @@ public class RemoveProjectFromFolderCommand : ICommand
             throw new UnauthorizedAccessException();
         }
 
-        // await DomainService.RemoveProjectFromFolder(FolderID, ProjectID);
+        await DomainService.RemoveProjectFromFolder(FolderID, ProjectID);
     }
 }

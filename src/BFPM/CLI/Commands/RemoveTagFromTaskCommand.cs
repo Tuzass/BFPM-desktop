@@ -45,6 +45,6 @@ public class RemoveTagFromTaskCommand : ICommand
             throw new NonlocalChangeException();
         }
 
-        // await DomainService.RemoveTagFromTask(TaskID, TagID);
+        await DomainService.RemoveTagFromTask(TaskID, TagID);
     }
 }

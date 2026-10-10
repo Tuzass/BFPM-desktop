@@ -36,6 +36,6 @@ public class DeleteTaskCommand : ICommand
             throw new NonlocalChangeException();
         }
         
-        // await DomainService.DeleteTask(TaskID);
+        await DomainService.DeleteTask(TaskID);
     }
 }

@@ -36,6 +36,6 @@ public class DeleteTagCommand : ICommand
             throw new NonlocalChangeException();
         }
 
-        // await DomainService.DeleteTag(TagID);
+        await DomainService.DeleteTag(TagID);
     }
 }

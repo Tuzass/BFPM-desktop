@@ -28,6 +28,6 @@ public class DeleteFolderCommand : ICommand
             throw new UnauthorizedAccessException();
         }
 
-        // await DomainService.DeleteFolder(FolderID);
+        await DomainService.DeleteFolder(FolderID);
     }
 }

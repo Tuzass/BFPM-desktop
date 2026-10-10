@@ -34,6 +34,6 @@ public class DeleteProjectCommand : ICommand
             throw new NonlocalChangeException();
         }
 
-        // await DomainService.DeleteProject(ProjectID);
+        await DomainService.DeleteProject(ProjectID);
     }
 }
