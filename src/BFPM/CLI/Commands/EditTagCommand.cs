@@ -9,11 +9,11 @@ namespace BFPM.CLI.Commands;
 
 public class EditTagCommand : ICommand
 {
-    public int ID {get; private set;}
+    public int TagID {get; private set;}
 
-    public EditTagCommand(int id)
+    public EditTagCommand(int tagID)
     {
-        ID = id;
+        TagID = tagID;
     }
 
     private EditTagCommand()
@@ -25,7 +25,7 @@ public class EditTagCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        var tag = await DomainService.GetTagByID(ID);
+        var tag = await DomainService.GetTagByID(TagID);
 
         if (!await DomainService.IsUserAssignedToProject(currentUser.ID, tag.ProjectID))
         {
@@ -37,7 +37,13 @@ public class EditTagCommand : ICommand
             throw new NonlocalChangeException();
         }
 
-        var localChange = await TagEditPage.Run(tag);
-        // await DomainService.ApplyLocalChange(localChange);
+        var localChange = await TagEditPage.Run(TagID);
+
+        if (localChange is null)
+        {
+            return;
+        }
+
+        await DomainService.ApplyLocalChange(localChange);
     }
 }
