@@ -1,9 +1,9 @@
-using System.Linq;
+using System;
 using System.Threading.Tasks;
 using BFPM.CLI.Pages;
 using Services;
-using Services.Exceptions;
 using BFPM.CLI.Exceptions;
+using Microsoft.VisualBasic;
 
 namespace BFPM.CLI.Commands;
 
@@ -27,7 +27,7 @@ public class NewTaskCommand : ICommand
 
         if (!await DomainService.IsUserAssignedToProject(currentUser.ID, ProjectID))
         {
-            throw new UnauthorizedAccessException();
+            throw new Services.Exceptions.UnauthorizedAccessException();
         }
 
         if (!await DomainService.IsProjectLocal(ProjectID))
@@ -36,6 +36,14 @@ public class NewTaskCommand : ICommand
         }
 
         var task = await TaskCreationPage.Run(ProjectID);
-        // await DomainService.CreateTask(ProjectID, task.Name, task.Description, task.Status, task.Priority, task.DueDate);
+
+        if (task is null)
+        {
+            return;
+        }
+
+        string dueDateString = task.DueDate is null ? "" : task.DueDate.Value.ToString("dd-MM-yyyy hh:mm:ss");
+        Console.WriteLine($"New task created\nName: {task.Name}, Description: {task.Description}, Status: {task.Status}, Priority: {task.Priority}, Due Date: {dueDateString}");
+        await DomainService.CreateTask(ProjectID, task.Name, task.Description, task.Status, task.Priority, task.DueDate);
     }
 }
