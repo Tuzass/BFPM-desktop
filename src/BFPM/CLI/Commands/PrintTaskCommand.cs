@@ -30,6 +30,8 @@ public class PrintTaskCommand : ICommand
             throw new UnauthorizedAccessException();
         }
 
+        var tags = await DomainService.GetTagsByTask(TaskID);
         Console.WriteLine(Utils.TaskToString(task));
+        Console.WriteLine($"Tags: {Utils.TagListToString(tags)}");
     }
 }
