@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Domain.Entities;
 
@@ -45,6 +46,18 @@ Created at: {project.CreatedAt}
 Completed at: {project.CompletedAt}";
     }
 
+    public static string ProjectListToString(List<Project> projects)
+    {
+        List<string> projectStrings = [];
+
+        foreach (var project in projects)
+        {
+            projectStrings.Add($"{project.Name} ({project.ID})");
+        }
+
+        return string.Join(", ", projectStrings);
+    }
+
     public static string TaskToString(TaskItem task)
     {
         return $@"ID: {task.ID}
@@ -57,10 +70,34 @@ Created at: {task.CreatedAt}
 Completed at: {task.CompletedAt}";
     }
 
+    public static string TaskListToString(List<TaskItem> tasks)
+    {
+        List<string> taskStrings = [];
+
+        foreach (var task in tasks)
+        {
+            taskStrings.Add($"{task.Name} ({task.ID})");
+        }
+
+        return string.Join(", ", taskStrings);
+    }
+
     public static string TagToString(Tag tag)
     {
         return $@"ID: {tag.ID}
 Name: {tag.Name}";
+    }
+
+    public static string TagListToString(List<Tag> tags)
+    {
+        List<string> tagStrings = [];
+
+        foreach (var tag in tags)
+        {
+            tagStrings.Add($"{tag.Name} ({tag.ID})");
+        }
+
+        return string.Join(", ", tagStrings);
     }
 
     public static bool ValidateDomainEntityName(string name)

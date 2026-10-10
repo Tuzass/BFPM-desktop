@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Services;
 
@@ -29,6 +28,8 @@ public class PrintFolderCommand : ICommand
         }
 
         var folder = await DomainService.GetFolderByID(FolderID);
+        var projects = await DomainService.GetProjectsByFolder(FolderID);
         Console.WriteLine(Utils.FolderToString(folder));
+        Console.WriteLine($"Projects: {Utils.ProjectListToString(projects)}");
     }
 }

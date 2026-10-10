@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Services;
 
@@ -30,5 +29,11 @@ public class PrintProjectCommand : ICommand
 
         var project = await DomainService.GetProjectByID(ProjectID);
         Console.WriteLine(Utils.ProjectToString(project));
+
+        var tasks = await DomainService.GetTasksByProject(ProjectID);
+        Console.WriteLine($"Tasks: {Utils.TaskListToString(tasks)}");
+
+        var tags = await DomainService.GetTagsByProject(ProjectID);
+        Console.WriteLine($"Tags: {Utils.TagListToString(tags)}");
     }
 }
