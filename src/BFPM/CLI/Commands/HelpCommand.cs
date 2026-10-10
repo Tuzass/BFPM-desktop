@@ -101,6 +101,16 @@ Usage: new folder            => enters the folder creation page
        new tag <project id>  => enters the tag creation page for project specified by <project id>";
         }
 
+        if (command == "print")
+        {
+            return @"Prints full information regarding an entity
+Usage: print folder <folder id>   => prints ID, name, description and projects of the the folder specified by <folder id>
+       print project <project id> => prints ID, name, description, status, tasks and tags of the the project specified by <project id>
+       print task <task id>       => prints ID, name, description, status, priority, due date and tags of the the task specified by <task id>
+       print tag <tag id>         => prints ID and name of the the tag specified by <tag id>
+       print current_user         => prints ID, name and email of the currently selected user";
+        }
+
         if (command == "register")
         {
             return "Enters the 'user register' page";
