@@ -1,8 +1,7 @@
-using System.Linq;
+using System;
 using System.Threading.Tasks;
 using BFPM.CLI.Pages;
 using Services;
-using Services.Exceptions;
 using BFPM.CLI.Exceptions;
 
 namespace BFPM.CLI.Commands;
@@ -27,7 +26,7 @@ public class EditProjectCommand : ICommand
 
         if (!await DomainService.IsUserAssignedToProject(currentUser.ID, ProjectID))
         {
-            throw new UnauthorizedAccessException();
+            throw new Services.Exceptions.UnauthorizedAccessException();
         }
 
         if (!await DomainService.IsProjectLocal(ProjectID))
@@ -35,8 +34,14 @@ public class EditProjectCommand : ICommand
             throw new NonlocalChangeException();
         }
 
-        var project = await DomainService.GetProjectByID(ProjectID);
-        var localChange = await ProjectEditPage.Run(project);
-        // await DomainService.ApplyLocalChange(localChange);
+        var localChange = await ProjectEditPage.Run(ProjectID);
+
+        if (localChange is null)
+        {
+            return;
+        }
+
+        Console.WriteLine($"Project {ProjectID} changed\nName: {localChange.Name}, Description: {localChange.Description}, Status: {localChange.Status}");
+        await DomainService.ApplyLocalChange(localChange);
     }
 }
