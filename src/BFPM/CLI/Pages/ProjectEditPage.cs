@@ -220,7 +220,7 @@ Left/Right | Moves cursor within field");
 
                     if (!statusOptions.Contains(fieldContents[2].Trim()))
                     {
-                        PrintErrorMessage("Please make sure it is less than 2000 characters long!");
+                        PrintErrorMessage("Please choose a number from 1-4 for the project status!");
                         continue;
                     }
 
