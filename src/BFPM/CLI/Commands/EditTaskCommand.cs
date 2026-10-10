@@ -9,11 +9,11 @@ namespace BFPM.CLI.Commands;
 
 public class EditTaskCommand : ICommand
 {
-    public int ID {get; private set;}
+    public int TaskID {get; private set;}
 
-    public EditTaskCommand(int id)
+    public EditTaskCommand(int taskID)
     {
-        ID = id;
+        TaskID = taskID;
     }
 
     private EditTaskCommand()
@@ -24,8 +24,7 @@ public class EditTaskCommand : ICommand
     public async Task Execute()
     {
         var currentUser = await UserService.GetCurrentUser();
-
-        var task = await DomainService.GetTaskByID(ID);
+        var task = await DomainService.GetTaskByID(TaskID);
 
         if (!await DomainService.IsUserAssignedToProject(currentUser.ID, task.ProjectID))
         {
@@ -37,7 +36,13 @@ public class EditTaskCommand : ICommand
             throw new NonlocalChangeException();
         }
 
-        var localChange = await TaskEditPage.Run(task);
-        // await DomainService.ApplyLocalChange(localChange);
+        var localChange = await TaskEditPage.Run(TaskID);
+
+        if (localChange is null)
+        {
+            return;
+        }
+
+        await DomainService.ApplyLocalChange(localChange);
     }
 }

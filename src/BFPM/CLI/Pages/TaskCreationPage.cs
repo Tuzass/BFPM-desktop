@@ -108,9 +108,9 @@ public class TaskCreationPage
     private static void PrintEditingKeyInstructions()
     {
         Console.SetCursorPosition(0, 8);
-        Console.Write(@"Status options: 1 (Active), 2 (On Hold)
+        Console.Write(@"Status options: 1 (To Do), 2 (In Progress)
 Priority options: 1 (Low), 2 (Medium), 3 (High), 4 (Urgent)
-Date format: dd-mm-yyyy hh:mm:ss (24 hour format) // Example: 30-11-2026 12:00:00
+Date format (leave empty for no due date): dd-mm-yyyy hh:mm:ss (24 hour format) // Example: 30-11-2026 12:00:00
 ESC/Enter | Finishes editing
 Up | Moves to next field
 Down/Tab | Moves to previous field
@@ -120,13 +120,13 @@ Left/Right | Moves cursor within field");
     private static void ClearEditingKeyInstructions()
     {
         Console.SetCursorPosition(0, 8);
-        Console.Write(new string(' ', 39));
+        Console.Write(new string(' ', 42));
 
         Console.SetCursorPosition(0, 9);
         Console.Write(new string(' ', 59));
 
         Console.SetCursorPosition(0, 10);
-        Console.Write(new string(' ', 81));
+        Console.Write(new string(' ', 111));
         
         Console.SetCursorPosition(0, 11);
         Console.Write(new string(' ', 28));
