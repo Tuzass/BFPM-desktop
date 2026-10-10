@@ -33,7 +33,7 @@ public class ProjectCreationPage
 
     private static void PrintMainOptionIndicator(List<string> optionNames, int optionIndex)
     {
-        Console.SetCursorPosition(0, 6);
+        Console.SetCursorPosition(0, 5);
 
         int totalLength = string.Join(" | ", optionNames).Length;
         string currentIndicator = "";
@@ -50,7 +50,7 @@ public class ProjectCreationPage
 
     private static void PrintMainOptionList(List<string> optionNames)
     {
-        Console.SetCursorPosition(0, 7);
+        Console.SetCursorPosition(0, 6);
         Console.Write(string.Join(" | ", optionNames));
     }
 
@@ -58,16 +58,16 @@ public class ProjectCreationPage
     {
         int optionListLength = string.Join(" | ", optionNames).Length;
 
-        Console.SetCursorPosition(0, 6);
+        Console.SetCursorPosition(0, 5);
         Console.Write(new string(' ', optionListLength));
 
-        Console.SetCursorPosition(0, 7);
+        Console.SetCursorPosition(0, 6);
         Console.Write(new string(' ', optionListLength));
     }
 
     private static void PrintConfirmationOptionIndicator(int optionIndex)
     {
-        Console.SetCursorPosition(0, 8);
+        Console.SetCursorPosition(0, 7);
 
         if (optionIndex == 0)
         {
@@ -82,33 +82,32 @@ public class ProjectCreationPage
 
     private static void PrintConfirmationMessage(string message)
     {
-        Console.SetCursorPosition(0, 6);
+        Console.SetCursorPosition(0, 5);
         Console.Write(message);
     }
 
     private static void PrintConfirmationOptions()
     {
-        Console.SetCursorPosition(0, 9);
+        Console.SetCursorPosition(0, 8);
         Console.Write("Yes | No");
     }
 
     private static void ClearConfirmationOptions()
     {
-        Console.SetCursorPosition(0, 6);
+        Console.SetCursorPosition(0, 5);
         Console.Write(new string(' ', 200));
 
-        Console.SetCursorPosition(0, 8);
+        Console.SetCursorPosition(0, 7);
         Console.Write(new string(' ', 8));
 
-        Console.SetCursorPosition(0, 9);
+        Console.SetCursorPosition(0, 8);
         Console.Write(new string(' ', 8));
     }
     
     private static void PrintEditingKeyInstructions()
     {
-        Console.SetCursorPosition(0, 6);
-        Console.Write(@"Status options: 1 (Active), 2 (On Hold), 3 (Archived), 4 (Completed)
-ESC/Enter | Finishes editing
+        Console.SetCursorPosition(0, 5);
+        Console.Write(@"ESC/Enter | Finishes editing
 Up | Moves to next field
 Down/Tab | Moves to previous field
 Left/Right | Moves cursor within field");
@@ -116,40 +115,36 @@ Left/Right | Moves cursor within field");
 
     private static void ClearEditingKeyInstructions()
     {
-        Console.SetCursorPosition(0, 6);
-        Console.Write(new string(' ', 68));
-        
-        Console.SetCursorPosition(0, 7);
-        Console.Write(new string(' ', 22));
+        Console.SetCursorPosition(0, 5);
+        Console.Write(new string(' ', 28));
 
-        Console.SetCursorPosition(0, 8);
+        Console.SetCursorPosition(0, 6);
         Console.Write(new string(' ', 24));
 
-        Console.SetCursorPosition(0, 9);
+        Console.SetCursorPosition(0, 7);
         Console.Write(new string(' ', 34));
 
-        Console.SetCursorPosition(0, 10);
+        Console.SetCursorPosition(0, 8);
         Console.Write(new string(' ', 38));
     }
 
     private static void PrintErrorMessage(string message)
     {
-        Console.SetCursorPosition(0, 9);
+        Console.SetCursorPosition(0, 8);
         Console.Write(message);
     }
 
     private static void ClearErrorMessage()
     {
-        Console.SetCursorPosition(0, 9);
+        Console.SetCursorPosition(0, 8);
         Console.Write(new string(' ', 200));
     }
 
     public static async Task<Project?> Run(int currentUserID)
     {
-        List<string> fieldNames = ["Name", "Description", "Status"];
-        List<string> fieldContents = ["", "", ""];
-        List<string> statusOptions = ["1", "2", "3", "4"];
-        int fieldCount = 3;
+        List<string> fieldNames = ["Name", "Description"];
+        List<string> fieldContents = ["", ""];
+        int fieldCount = 2;
         int fieldIndex;
 
         int longestFieldLength = 0;
@@ -193,21 +188,15 @@ Left/Right | Moves cursor within field");
                         continue;
                     }
 
-                    if (!Utils.ValidateDomainEntityDescription(fieldContents[1].Trim()))
-                    {
-                        PrintErrorMessage("Please make sure it is less than 2000 characters long!");
-                        continue;
-                    }
-
-                    if (!statusOptions.Contains(fieldContents[2].Trim()))
-                    {
-                        PrintErrorMessage("Please choose a number from 1-4 for the project status!");
-                        continue;
-                    }
-
                     if (await DomainService.IsProjectDuplicate(currentUserID, fieldContents[0].Trim()))
                     {
                         PrintErrorMessage($"Current user already has a project named '{fieldContents[0].Trim()}' (case-insensitive)!");
+                        continue;
+                    }
+
+                    if (!Utils.ValidateDomainEntityDescription(fieldContents[1].Trim()))
+                    {
+                        PrintErrorMessage("Please make sure it is less than 2000 characters long!");
                         continue;
                     }
 
@@ -243,20 +232,10 @@ Left/Right | Moves cursor within field");
                                 break;
                             }
 
-                            fieldContents[2] = fieldContents[2].Trim();
-                            ProjectStatus status = fieldContents[2] switch
-                            {
-                                "1" => ProjectStatus.Active,
-                                "2" => ProjectStatus.OnHold,
-                                "3" => ProjectStatus.Archived,
-                                "4" => ProjectStatus.Completed,
-                                _ => ProjectStatus.Active
-                            };
-
                             Console.CursorVisible = true;
                             Console.Write("\x1b[?7h");
                             Console.Write("\x1b[?1049l");
-                            return new(null, null, currentUserID, currentUserID, fieldContents[0].Trim(), fieldContents[1].Trim(), status, null, null, null);
+                            return new(null, null, currentUserID, currentUserID, fieldContents[0].Trim(), fieldContents[1].Trim(), ProjectStatus.Active, null, null, null);
                         }
                     }
 

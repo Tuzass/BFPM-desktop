@@ -108,7 +108,7 @@ Left/Right | Moves cursor within field");
     private static void ClearEditingKeyInstructions()
     {
         Console.SetCursorPosition(0, 4);
-        Console.Write(new string(' ', 22));
+        Console.Write(new string(' ', 28));
 
         Console.SetCursorPosition(0, 5);
         Console.Write(new string(' ', 38));
