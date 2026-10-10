@@ -470,7 +470,13 @@ static public class DomainService
             switch (localChange.TargetType)
             {
                 case DomainEntityType.Folder:
-                    var folder = await GetFolderByID(localChange.TargetID);
+                    var folder = await context.Folders
+                        .SingleOrDefaultAsync(f => f.ID == localChange.TargetID);
+                    
+                    if (folder is null)
+                    {
+                        throw new InexistentFolderException();
+                    }
 
                     if (localChange.Name is not null)
                     {
@@ -482,11 +488,22 @@ static public class DomainService
                         folder.Description = localChange.Description;
                     }
 
-                    folder.IncreaseVersion();
+                    if (localChange.Name is not null
+                     || localChange.Description is not null)
+                    {
+                        folder.IncreaseVersion();                        
+                    }
+
                     break;
                 
                 case DomainEntityType.Project:
-                    var project = await GetProjectByID(localChange.TargetID);
+                    var project = await context.Projects
+                        .SingleOrDefaultAsync(f => f.ID == localChange.TargetID);
+                    
+                    if (project is null)
+                    {
+                        throw new InexistentProjectException();
+                    }
 
                     if (localChange.Name is not null)
                     {
@@ -520,11 +537,23 @@ static public class DomainService
                         }
                     }
 
-                    project.IncreaseVersion();
+                    if (localChange.Name is not null
+                     || localChange.Description is not null
+                     || localChange.Status is not null)
+                    {
+                        project.IncreaseVersion();                        
+                    }
+
                     break;
                 
                 case DomainEntityType.Task:
-                    var task = await GetTaskByID(localChange.TargetID);
+                    var task = await context.Tasks
+                        .SingleOrDefaultAsync(f => f.ID == localChange.TargetID);
+                    
+                    if (task is null)
+                    {
+                        throw new InexistentTaskException();
+                    }
 
                     if (localChange.Name is not null)
                     {
@@ -584,23 +613,37 @@ static public class DomainService
                         }
                     }
 
-                    if (localChange.DueDate is not null)
+                    if (localChange.DueDateChanged)
                     {
-                        task.ChangeDueDate((DateTime)localChange.DueDate);
+                        task.ChangeDueDate(localChange.DueDate);
                     }
 
-                    task.IncreaseVersion();
+                    if (localChange.Name is not null
+                     || localChange.Description is not null
+                     || localChange.Status is not null
+                     || localChange.Priority is not null
+                     || localChange.DueDateChanged)
+                    {
+                        task.IncreaseVersion();                        
+                    }
+
                     break;
                 
                 case DomainEntityType.Tag:
-                    var tag = await GetTagByID(localChange.TargetID);
+                    var tag = await context.Tags
+                        .SingleOrDefaultAsync(f => f.ID == localChange.TargetID);
+                    
+                    if (tag is null)
+                    {
+                        throw new InexistentTagException();
+                    }
 
                     if (localChange.Name is not null)
                     {
                         tag.Name = localChange.Name;
+                        tag.IncreaseVersion();                        
                     }
 
-                    tag.IncreaseVersion();
                     break;
             }
 
