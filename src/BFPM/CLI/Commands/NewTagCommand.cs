@@ -42,6 +42,6 @@ public class NewTagCommand : ICommand
         }
 
         Console.WriteLine($"New tag created\nName: {task.Name}");
-        await DomainService.CreateTag(currentUser.ID, task.Name);
+        await DomainService.CreateTag(ProjectID, task.Name);
     }
 }
