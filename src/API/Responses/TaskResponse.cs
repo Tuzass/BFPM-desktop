@@ -14,23 +14,4 @@ public class TaskResponse
     public DateTime CreatedAt {get; set;}
     public DateTime? CompletedAt {get; set;}
     public int Version {get; set;}
-
-    public TaskResponse(int id, int projectID, string name, string description, TaskItemStatus status, TaskItemPriority priority, DateTime? dueDate, DateTime createdAt, DateTime? completedAt, int version)
-    {
-        ID = id;
-        ProjectID = projectID;
-        Name = name;
-        Description = description;
-        Status = status;
-        Priority = priority;
-        DueDate = dueDate;
-        CreatedAt = createdAt;
-        CompletedAt = completedAt;
-        Version = version;
-    }
-
-    private TaskResponse()
-    {
-        
-    }
 }
