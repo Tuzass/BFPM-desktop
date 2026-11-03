@@ -9,3 +9,4 @@ src/Services/bin
 tests/Tests/obj
 tests/Tests/bin
 *.db
+src/BFPM/CLI/*.txt
