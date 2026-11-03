@@ -44,6 +44,6 @@ public class EditTagCommand : ICommand
             return;
         }
 
-        await DomainService.ApplyLocalChange(localChange);
+        await DomainService.ApplyChange(localChange);
     }
 }

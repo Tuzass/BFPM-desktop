@@ -145,7 +145,7 @@ Left/Right | Moves cursor within field");
         Console.Write(new string(' ', 200));
     }
 
-    public static async Task<LocalChange?> Run(int projectID)
+    public static async Task<Change?> Run(int projectID)
     {
         var currentUser = await UserService.GetCurrentUser();
         var project = await DomainService.GetProjectByID(projectID);

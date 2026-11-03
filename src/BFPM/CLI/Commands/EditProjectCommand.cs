@@ -42,6 +42,6 @@ public class EditProjectCommand : ICommand
         }
 
         Console.WriteLine($"Project {ProjectID} changed\nName: {localChange.Name}, Description: {localChange.Description}, Status: {localChange.Status}");
-        await DomainService.ApplyLocalChange(localChange);
+        await DomainService.ApplyChange(localChange);
     }
 }

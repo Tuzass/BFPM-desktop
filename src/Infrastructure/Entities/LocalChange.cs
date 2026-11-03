@@ -3,7 +3,7 @@ using Infrastructure.Enums;
 
 namespace Infrastructure.Entities;
 
-public class LocalChange
+public class Change
 {
     public int ID {get; private set;}
     public DomainEntityType TargetType {get; private set;}
@@ -15,12 +15,12 @@ public class LocalChange
     public DateTime? DueDate {get; set;}
     public bool DueDateChanged {get; set;}
 
-    private LocalChange()
+    private Change()
     {
         
     }
 
-    public LocalChange(DomainEntityType targetType, int targetID, string? name, string? description, DomainEntityStatus? status, TaskItemPriority? priority, DateTime? dueDate, bool dueDateChanged)
+    public Change(DomainEntityType targetType, int targetID, string? name, string? description, DomainEntityStatus? status, TaskItemPriority? priority, DateTime? dueDate, bool dueDateChanged)
     {
         TargetType = targetType;
         TargetID = targetID;

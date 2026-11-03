@@ -11,7 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Project> Projects {get; set;}
     public DbSet<TaskItem> Tasks {get; set;}
     public DbSet<Tag> Tags {get; set;}
-    public DbSet<LocalChange> LocalChanges {get; set;}
+    public DbSet<Change> Changes {get; set;}
     public DbSet<LogEntry> LogEntries {get; set;}
     public DbSet<Notification> Notifications {get; set;}
     public DbSet<FolderProjectLink> FolderProjectLinks {get; set;}

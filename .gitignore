@@ -2,6 +2,10 @@ src/Domain/obj
 src/Domain/bin
 src/Infrastructure/obj
 src/Infrastructure/bin
+src/API/obj
+src/API/bin
+src/Workflow/obj
+src/Workflow/bin
 src/BFPM/obj
 src/BFPM/bin
 src/Services/obj

@@ -37,6 +37,6 @@ public class EditFolderCommand : ICommand
         }
 
         Console.WriteLine($"Folder {FolderID} changed\nName: {localChange.Name}, Description: {localChange.Description}");
-        await DomainService.ApplyLocalChange(localChange);
+        await DomainService.ApplyChange(localChange);
     }
 }

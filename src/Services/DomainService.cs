@@ -463,7 +463,7 @@ static public class DomainService
         }
     }
 
-    public static async Task ApplyLocalChange(LocalChange localChange)
+    public static async Task ApplyChange(Change localChange)
     {
         using (var context = AppDbContextFactory.CreateContext())
         {

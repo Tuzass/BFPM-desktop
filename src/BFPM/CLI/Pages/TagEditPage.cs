@@ -128,7 +128,7 @@ Left/Right | Moves cursor within field");
         Console.Write(new string(' ', 200));
     }
 
-    public static async Task<LocalChange?> Run(int tagID)
+    public static async Task<Change?> Run(int tagID)
     {
         var tag = await DomainService.GetTagByID(tagID);
         string name = tag.Name;

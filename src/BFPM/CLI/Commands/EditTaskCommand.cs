@@ -43,6 +43,6 @@ public class EditTaskCommand : ICommand
             return;
         }
 
-        await DomainService.ApplyLocalChange(localChange);
+        await DomainService.ApplyChange(localChange);
     }
 }

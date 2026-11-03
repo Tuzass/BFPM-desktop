@@ -130,7 +130,7 @@ If you wish to log in as an unregistered user, do 'login' (this requires a netwo
 
             if (inputString.Trim() == "current")
             {
-                Console.WriteLine(Utils.UserToString(currentUser) + "\n");
+                Console.WriteLine(Utils.UserToString(currentUser!) + "\n");
                 continue;
             }
 

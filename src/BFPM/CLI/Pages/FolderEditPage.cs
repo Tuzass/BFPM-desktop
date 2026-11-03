@@ -140,7 +140,7 @@ Left/Right | Moves cursor within field");
         Console.Write(new string(' ', 200));
     }
 
-    public static async Task<LocalChange?> Run(int currentUserID, int folderID)
+    public static async Task<Change?> Run(int currentUserID, int folderID)
     {
         var folder = await DomainService.GetFolderByID(folderID);
 
