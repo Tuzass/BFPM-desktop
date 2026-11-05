@@ -15,4 +15,16 @@ public class RegisterRequest
     [Required]
     [StringLength(128, MinimumLength = 8)]
     public string Password { get; set; } = string.Empty;
+
+    public RegisterRequest(string userName, string email, string password)
+    {
+        UserName = userName;
+        Email = email;
+        Password = password;
+    }
+
+    private RegisterRequest()
+    {
+        
+    }
 }

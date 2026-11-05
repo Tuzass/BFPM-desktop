@@ -2,11 +2,11 @@ namespace API.Requests;
 
 public class RefreshRequest
 {
-    public string RefreshToken {get; set;}
+    public string RefreshToken {get; set;} = null!;
 
     public RefreshRequest(string refreshToken)
     {
-        RefreshRequest = refreshToken;
+        RefreshToken = refreshToken;
     }
 
     private RefreshRequest()

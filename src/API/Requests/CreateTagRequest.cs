@@ -10,4 +10,15 @@ public class CreateTagRequest
     [Required]
     [StringLength(50, MinimumLength = 3)]
     public string Name {get; set;} = string.Empty;
+
+    public CreateTagRequest(int projectID, string name)
+    {
+        ProjectID = projectID;
+        Name = name;
+    }
+
+    private CreateTagRequest()
+    {
+        
+    }
 }

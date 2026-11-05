@@ -24,4 +24,19 @@ public class UploadProjectRequest
 
     [Required]
     public List<CreateTaskTagLinkRequest> TaskTagLinks {get; set;} = [];
+
+    public UploadProjectRequest(string name, string description, ProjectStatus status, List<CreateTaskRequest> tasks, List<CreateTagRequest> tags, List<CreateTaskTagLinkRequest> taskTagLinks)
+    {
+        Name = name;
+        Description = description;
+        Status = status;
+        Tasks = tasks;
+        Tags = tags;
+        TaskTagLinks = taskTagLinks;
+    }
+
+    private UploadProjectRequest()
+    {
+        
+    }
 }

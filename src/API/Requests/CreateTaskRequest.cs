@@ -23,4 +23,19 @@ public class CreateTaskRequest
     public TaskItemPriority Priority {get; set;}
 
     public DateTime? DueDate {get; set;}
+
+    public CreateTaskRequest(int projectID, string name, string description, TaskItemStatus status, TaskItemPriority priority, DateTime? dueDate)
+    {
+        ProjectID = projectID;
+        Name = name;
+        Description = description;
+        Status = status;
+        Priority = priority;
+        DueDate = dueDate;
+    }
+
+    private CreateTaskRequest()
+    {
+        
+    }
 }

@@ -9,4 +9,15 @@ public class CreateTaskTagLinkRequest
 
     [Required]
     public int TagID {get; set;}
+
+    public CreateTaskTagLinkRequest(int taskID, int tagID)
+    {
+        TaskID = taskID;
+        TagID = tagID;
+    }
+
+    private CreateTaskTagLinkRequest()
+    {
+        
+    }
 }

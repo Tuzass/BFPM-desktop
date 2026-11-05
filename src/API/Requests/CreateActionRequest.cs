@@ -27,9 +27,10 @@ public class CreateActionRequest
     public int? RelatedEntityID {get; private set;}
     public Change? Change {get; private set;} = null!;
 
-    public CreateActionRequest(int userID, ActionType actionType, DomainEntityType targetType, int targetID, DomainEntityType? relatedEntityType, int? relatedEntityID, Change? change)
+    public CreateActionRequest(int userID, int projectID, ActionType actionType, DomainEntityType targetType, int targetID, DomainEntityType? relatedEntityType, int? relatedEntityID, Change? change)
     {
         UserID = userID;
+        ProjectID = projectID;
         ActionType = actionType;
         TargetType = targetType;
         TargetID = targetID;
