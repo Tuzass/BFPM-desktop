@@ -25,19 +25,6 @@ static public class UserService
         }
     }
 
-    public static async Task<bool> ValidateUser(int userID)
-    {
-        // checks if a user is registered and active in the remote DB
-        // TODO implement after ApiClient is done
-        return true;
-    }
-
-    public static void Register()
-    {
-        // gathers information and sends it to the API to be added as a new user
-        // TODO: implement after ApiClient is done
-    }
-
     public static async Task Store(int id, string username, string email)
     {
         using (var context = AppDbContextFactory.CreateContext())
@@ -46,19 +33,6 @@ static public class UserService
             context.Users.Add(user);
             await context.SaveChangesAsync();
         }
-    }
-
-    public static void Login()
-    {
-        // gathers information and sends it to the API as part of the authentication process
-        // TODO: implement after ApiClient is done
-    }
-
-    public static void Logoff()
-    {
-        // switches to "no current user"
-        // deletes whatever authentication tokens are stored for a given user
-        // TODO: implement after ApiClient is done
     }
 
     public static async Task UpdateInformation(int userID, string username, string email)
@@ -77,22 +51,6 @@ static public class UserService
             user.Email = email;
             await context.SaveChangesAsync();
         }
-    }
-
-    public static async Task<User?> GetRegisteredUser(int userID)
-    {
-        // retrieves a user's information from the local DB
-        // if not present, retrieves it from the remote DB
-        // TODO: implement after ApiClient is done
-        return null;
-    }
-
-    public static async Task DeleteUser(int userID)
-    {
-        // marks the user as 'inactive' in the remote DB
-        // TODO: implement after ApiClient is done
-
-        await RemoveRegisteredUser(userID);
     }
 
     public static async Task<User> GetCurrentUser()
@@ -160,11 +118,6 @@ static public class UserService
         using (var context = AppDbContextFactory.CreateContext())
         {
             var currentUser = await GetCurrentUser();
-
-            if (currentUser.ID == userID)
-            {
-                Logoff();
-            }
 
             var user = await context.Users
                 .SingleOrDefaultAsync(u => u.ID == userID);
