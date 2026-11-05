@@ -1,4 +1,5 @@
 using System;
+using System.Net.Http;
 using BFPM.CLI.Exceptions;
 using Services;
 using Services.Exceptions;
@@ -13,6 +14,8 @@ Type 'help' to see the available commands";
     public static async void Run(string[] args)
     {
         var settings = SettingsService.GetSettings();
+        HttpClient httpClient = new(){BaseAddress = new Uri("https://localhost:7035")};
+        ApiClient apiClient = new(httpClient);
         Console.WriteLine(StartMessage);
 
         while (true)
@@ -28,7 +31,7 @@ Type 'help' to see the available commands";
             try
             {
                 var tokens = Lexer.Tokenize(inputString);
-                var command = Parser.Parse(tokens);
+                var command = Parser.Parse(tokens, apiClient);
 
                 if (command is null)
                 {
@@ -36,6 +39,7 @@ Type 'help' to see the available commands";
                 }
 
                 await command.Execute();
+                settings = SettingsService.GetSettings();
                 continue;
             }
 

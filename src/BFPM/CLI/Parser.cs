@@ -1,5 +1,6 @@
 using System.Linq;
 using System.Collections.Generic;
+using Services;
 using BFPM.CLI.Commands;
 using BFPM.CLI.Exceptions;
 
@@ -9,7 +10,7 @@ public class Parser
 {
     private readonly static TokenType[] ValidHelpCommands = [TokenType.Assign, TokenType.Clear, TokenType.Copy, TokenType.Delete, TokenType.Edit, TokenType.Exit, TokenType.List, TokenType.Login, TokenType.Logoff, TokenType.New, TokenType.Print, TokenType.Register, TokenType.Remove, TokenType.Switch];
 
-    public static ICommand? Parse(List<Token> tokens)
+    public static ICommand? Parse(List<Token> tokens, ApiClient apiClient)
     {
         var first = tokens[0];
 
@@ -58,7 +59,7 @@ public class Parser
             case TokenType.Logoff:
                 if (tokens[1].Type == TokenType.End)
                 {
-                    return new LogoffCommand();
+                    return new LogoffCommand(apiClient);
                 }
 
                 throw new UnexpectedTokenException();
@@ -83,7 +84,7 @@ public class Parser
             case TokenType.Switch:
                 if (tokens[1].Type == TokenType.End)
                 {
-                    return new SwitchCommand();
+                    return new SwitchCommand(apiClient);
                 }
 
                 throw new UnexpectedTokenException();

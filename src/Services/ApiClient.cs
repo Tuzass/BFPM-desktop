@@ -17,9 +17,9 @@ public class ApiClient
     private readonly HttpClient _httpClient = null!;
     private readonly SemaphoreSlim _refreshLock = null!;
 
-    public ApiClient(TokenStore tokenStore, HttpClient httpClient)
+    public ApiClient(HttpClient httpClient)
     {
-        _tokenStore = tokenStore;
+        _tokenStore = new();
         _httpClient = httpClient;
         _refreshLock = new(1, 1);
     }
@@ -74,7 +74,7 @@ public class ApiClient
         }
     }
 
-    private async Task<string?> GetAccessToken(CancellationToken ct)
+    private async Task<string?> GetAccessToken(CancellationToken ct = default)
     {
         var tokens = await _tokenStore.GetTokens();
 
@@ -102,7 +102,7 @@ public class ApiClient
         return tokens.AccessToken;
     }
 
-    private async Task<HttpResponseMessage> SendAuthenticated(HttpRequestMessage request, CancellationToken ct)
+    private async Task<HttpResponseMessage> SendAuthenticated(HttpRequestMessage request, CancellationToken ct = default)
     {
         var accessToken = await GetAccessToken(ct);
 
@@ -180,13 +180,14 @@ public class ApiClient
         }
     }
 
-    public async Task<bool> LoginAsNewUser(string username, string password, CancellationToken ct = default)
+    public async Task<bool> LoginWithCredentials(string username, string password, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
         try
         {
             _currentUserID = null;
+            await UserService.SwitchCurrentUser(null);
             await _tokenStore.ClearTokens();
             var request = new LoginRequest(username, password);
 
@@ -225,10 +226,11 @@ public class ApiClient
                     return false;
                 }
 
-                await UserService.Store(userResponse.ID, userResponse.UserName, userResponse.Email);
+                await UserService.StoreOrUpdate(userResponse.ID, userResponse.UserName, userResponse.Email);
                 _currentUserID = userResponse.ID;
+                await UserService.SwitchCurrentUser(userResponse.ID);
+
                 var tokens = await _tokenStore.GetTokens();
-                
                 if (tokens is not null && _tokenStore.PersistentStorageAvailable)
                 {
                     await _tokenStore.PersistRefreshToken(userResponse.ID, tokens.RefreshToken);
@@ -241,6 +243,7 @@ public class ApiClient
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _currentUserID = null;
+            await UserService.SwitchCurrentUser(null);
             await _tokenStore.ClearTokens();
             return false;
         }
@@ -251,24 +254,27 @@ public class ApiClient
         }
     }
 
-    public async Task<bool> LoginAsStoredUser(int userID, CancellationToken ct = default)
+    public async Task<bool> LoginWithPersistentToken(int userID, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
         try
         {
             _currentUserID = userID;
+            await UserService.SwitchCurrentUser(userID);
 
             if (!await _tokenStore.LoadPersistedRefreshToken(_currentUserID.Value))
             {
                 await _tokenStore.ClearTokens();
                 _currentUserID = null;
+                await UserService.SwitchCurrentUser(null);
                 return false;
             }
 
             if (!await RefreshToken(ct))
             {
                 _currentUserID = null;
+                await UserService.SwitchCurrentUser(null);
                 return false;
             }
 
@@ -279,6 +285,7 @@ public class ApiClient
                 {
                     await _tokenStore.ClearTokens();
                     _currentUserID = null;
+                    await UserService.SwitchCurrentUser(null);
                     return false;
                 }
 
@@ -288,6 +295,7 @@ public class ApiClient
                 {
                     await _tokenStore.ClearTokens();
                     _currentUserID = null;
+                    await UserService.SwitchCurrentUser(null);
                     return false;
                 }
 
@@ -299,6 +307,7 @@ public class ApiClient
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _currentUserID = null;
+            await UserService.SwitchCurrentUser(null);
             await _tokenStore.ClearTokens();
             return false;
         }
@@ -309,7 +318,7 @@ public class ApiClient
         }
     }
 
-    public async Task Logout(CancellationToken ct)
+    public async Task Logout(CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
@@ -317,6 +326,7 @@ public class ApiClient
         {
             await _tokenStore.ClearTokens();
             _currentUserID = null;
+            await UserService.SwitchCurrentUser(null);
         }
         
         finally
@@ -325,7 +335,7 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> GetCurrentUser(CancellationToken ct)
+    public async Task<HttpResponseMessage> GetCurrentUser(CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
@@ -340,7 +350,7 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> GetProject(int projectID, CancellationToken ct)
+    public async Task<HttpResponseMessage> GetProject(int projectID, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
@@ -355,7 +365,7 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> GetTask(int taskID, CancellationToken ct)
+    public async Task<HttpResponseMessage> GetTask(int taskID, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
@@ -370,7 +380,7 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> GetTag(int tagID, CancellationToken ct)
+    public async Task<HttpResponseMessage> GetTag(int tagID, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
@@ -385,7 +395,7 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> Register(string username, string email, string password, CancellationToken ct)
+    public async Task<HttpResponseMessage> Register(string username, string email, string password, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
@@ -401,7 +411,7 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> CreateAction(int userID, int projectID, ActionType actionType, DomainEntityType targetType, int targetID, DomainEntityType? relatedEntityType, int? relatedEntityID, Change? change, CancellationToken ct)
+    public async Task<HttpResponseMessage> CreateAction(int userID, int projectID, ActionType actionType, DomainEntityType targetType, int targetID, DomainEntityType? relatedEntityType, int? relatedEntityID, Change? change, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
@@ -417,7 +427,7 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> SendVersions(int userActionID, Dictionary<EntityIdPair, int> versions, CancellationToken ct)
+    public async Task<HttpResponseMessage> SendVersions(int userActionID, Dictionary<EntityIdPair, int> versions, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
@@ -433,7 +443,7 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> UploadProject(string name, string description, ProjectStatus status, List<TaskItem> tasks, List<Tag> tags, List<TaskTagLink> taskTagLinks, CancellationToken ct)
+    public async Task<HttpResponseMessage> UploadProject(string name, string description, ProjectStatus status, List<TaskItem> tasks, List<Tag> tags, List<TaskTagLink> taskTagLinks, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 

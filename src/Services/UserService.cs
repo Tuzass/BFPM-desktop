@@ -25,12 +25,25 @@ static public class UserService
         }
     }
 
-    public static async Task Store(int id, string username, string email)
+    public static async Task StoreOrUpdate(int userID, string username, string email)
     {
         using (var context = AppDbContextFactory.CreateContext())
         {
-            User user = new(id, username, email);
-            context.Users.Add(user);
+            var user = await context.Users
+                .SingleOrDefaultAsync(u => u.ID == userID);
+            
+            if (user is null)
+            {
+                user = new(userID, username, email);
+                context.Users.Add(user);
+            }
+
+            else
+            {
+                user.Username = username;
+                user.Email = email;
+            }
+            
             await context.SaveChangesAsync();
         }
     }
@@ -44,7 +57,7 @@ static public class UserService
             
             if (user is null)
             {
-                throw new InexistentUserException();
+                throw new UserNotRegisteredLocally();
             }
             
             user.Username = username;
@@ -132,21 +145,24 @@ static public class UserService
         }
     }
 
-    public static async Task SwitchCurrentUser(int newCurrentUserID)
+    public static async Task SwitchCurrentUser(int? newCurrentUserID)
     {
         using (var context = AppDbContextFactory.CreateContext())
         {
-            User? newCurrentUser = await context.Users
-                .Where(u => u.ID == newCurrentUserID)
-                .SingleOrDefaultAsync();
-            
-            if (newCurrentUser is null)
+            if (newCurrentUserID is not null)
             {
-                throw new UserNotRegisteredLocally();
+                User? newCurrentUser = await context.Users
+                    .Where(u => u.ID == newCurrentUserID.Value)
+                    .SingleOrDefaultAsync();
+                
+                if (newCurrentUser is null)
+                {
+                    throw new UserNotRegisteredLocally();
+                }
             }
 
             var settings = SettingsService.GetSettings();
-            settings["CurrentUserID"] = newCurrentUserID.ToString();
+            settings["CurrentUserID"] = newCurrentUserID is null ? "" : newCurrentUserID.Value.ToString();
             SettingsService.UpdateSettings(settings);
         }
     }
