@@ -38,6 +38,16 @@ static public class UserService
         // TODO: implement after ApiClient is done
     }
 
+    public static async Task Store(int id, string username, string email)
+    {
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            User user = new(id, username, email);
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
+        }
+    }
+
     public static void Login()
     {
         // gathers information and sends it to the API as part of the authentication process
@@ -51,19 +61,22 @@ static public class UserService
         // TODO: implement after ApiClient is done
     }
 
-    public static void ChangeUsername()
+    public static async Task UpdateInformation(int userID, string username, string email)
     {
-        // TODO: implement after ApiClient is done
-    }
-
-    public static void ChangeEmail()
-    {
-        // TODO: implement after ApiClient is done
-    }
-
-    public static void ChangePassword()
-    {
-        // TODO: implement after ApiClient is done
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            var user = await context.Users
+                .SingleOrDefaultAsync(u => u.ID == userID);
+            
+            if (user is null)
+            {
+                throw new InexistentUserException();
+            }
+            
+            user.Username = username;
+            user.Email = email;
+            await context.SaveChangesAsync();
+        }
     }
 
     public static async Task<User?> GetRegisteredUser(int userID)
