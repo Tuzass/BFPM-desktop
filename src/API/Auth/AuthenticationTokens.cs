@@ -2,14 +2,14 @@ namespace API.Auth;
 
 public class AuthenticationTokens
 {
-    public string AccessToken {get; set;} = null!;
     public string RefreshToken {get; set;} = null!;
-    public DateTimeOffset AccessTokenExpiresAt {get; set;}
+    public string? AccessToken {get; set;}
+    public DateTimeOffset? AccessTokenExpiresAt {get; set;}
 
-    public AuthenticationTokens(string accessToken, string refreshToken, DateTimeOffset accessTokenExpiresAt)
+    public AuthenticationTokens(string refreshToken, string? accessToken = null, DateTimeOffset? accessTokenExpiresAt = null)
     {
-        AccessToken = accessToken;
         RefreshToken = refreshToken;
+        AccessToken = accessToken;
         AccessTokenExpiresAt = accessTokenExpiresAt;
     }
 

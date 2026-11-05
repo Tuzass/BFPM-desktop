@@ -1,5 +1,9 @@
-﻿using System.Net.Http;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
+using Domain.Entities;
+using Domain.Enums;
+using Infrastructure.Entities;
+using Infrastructure.Enums;
+using Workflow.Enums;
 using API.Auth;
 using API.Requests;
 using API.Responses;
@@ -8,6 +12,7 @@ namespace Services;
 
 public class ApiClient
 {
+    private int? _currentUserID;
     private readonly TokenStore _tokenStore = null!;
     private readonly HttpClient _httpClient = null!;
     private readonly SemaphoreSlim _refreshLock = null!;
@@ -29,9 +34,14 @@ public class ApiClient
         var accessTokenExpiresAt = DateTimeOffset.UtcNow.AddSeconds(response.ExpiresIn);
         var tokens = new AuthenticationTokens(response.AccessToken, response.RefreshToken, accessTokenExpiresAt);
         await _tokenStore.SaveTokens(tokens);
+
+        if (_currentUserID.HasValue && _tokenStore.PersistentStorageAvailable)
+        {
+            await _tokenStore.PersistRefreshToken(_currentUserID.Value, tokens.RefreshToken);
+        }
     }
 
-    private async Task<bool> RefreshTokenCore(CancellationToken ct = default)
+    private async Task<bool> RefreshToken(CancellationToken ct = default)
     {
         var tokens = await _tokenStore.GetTokens();
 
@@ -44,7 +54,8 @@ public class ApiClient
 
         using (var response = await _httpClient.PostAsJsonAsync("api/auth/refresh", request, ct))
         {
-            if (!response.IsSuccessStatusCode)
+            if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 await _tokenStore.ClearTokens();
                 return false;
@@ -63,46 +74,37 @@ public class ApiClient
         }
     }
 
-    private async Task<string?> GetAccessTokenAsync(CancellationToken ct)
+    private async Task<string?> GetAccessToken(CancellationToken ct)
     {
-        await _refreshLock.WaitAsync(ct);
+        var tokens = await _tokenStore.GetTokens();
 
-        try
+        if (tokens is null)
         {
-            var tokens = await _tokenStore.GetTokens();
+            return null;
+        }
 
-            if (tokens is null)
+        if (!tokens.AccessTokenExpiresAt.HasValue
+         || tokens.AccessTokenExpiresAt <= DateTimeOffset.UtcNow.AddMinutes(1))
+        {
+            if (!await RefreshToken(ct))
             {
                 return null;
             }
 
-            if (tokens.AccessTokenExpiresAt <= DateTimeOffset.UtcNow.AddMinutes(1))
-            {
-                if (!await RefreshTokenCore(ct))
-                {
-                    return null;
-                }
+            tokens = await _tokenStore.GetTokens();
 
-                tokens = await _tokenStore.GetTokens();
-
-                if (tokens is null)
-                {   
-                    return null;
-                }
+            if (tokens is null)
+            {   
+                return null;
             }
+        }
 
-            return tokens.AccessToken;
-        }
-        
-        finally
-        {
-            _refreshLock.Release();
-        }
+        return tokens.AccessToken;
     }
 
     private async Task<HttpResponseMessage> SendAuthenticated(HttpRequestMessage request, CancellationToken ct)
     {
-        var accessToken = await GetAccessTokenAsync(ct);
+        var accessToken = await GetAccessToken(ct);
 
         if (accessToken is null)
         {
@@ -113,18 +115,85 @@ public class ApiClient
         return await _httpClient.SendAsync(request, ct);
     }
 
-    public async Task<bool> Login(string username, string password, CancellationToken ct = default)
+    private async Task<HttpResponseMessage> GetCurrentUserCore(CancellationToken ct = default)
+    {
+        using (var httpRequest = new HttpRequestMessage(HttpMethod.Get, "api/users/me"))
+        {
+            return await SendAuthenticated(httpRequest, ct);
+        }
+    }
+
+    private async Task<HttpResponseMessage> GetProjectCore(int projectID, CancellationToken ct = default)
+    {
+        using (var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"api/projects/{projectID}"))
+        {
+            return await SendAuthenticated(httpRequest, ct);
+        }
+    }
+
+    private async Task<HttpResponseMessage> GetTaskCore(int taskID, CancellationToken ct = default)
+    {
+        using (var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"api/tasks/{taskID}"))
+        {
+            return await SendAuthenticated(httpRequest, ct);
+        }
+    }
+
+    private async Task<HttpResponseMessage> GetTagCore(int tagID, CancellationToken ct = default)
+    {
+        using (var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"api/tags/{tagID}"))
+        {
+            return await SendAuthenticated(httpRequest, ct);
+        }
+    }
+
+    private async Task<HttpResponseMessage> CreateActionCore(CreateActionRequest request, CancellationToken ct = default)
+    {
+        using (var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/actions"){Content = JsonContent.Create(request)})
+        {
+            return await SendAuthenticated(httpRequest, ct);
+        }
+    }
+
+    private async Task<HttpResponseMessage> RegisterCore(RegisterRequest request, CancellationToken ct = default)
+    {
+        return await _httpClient.PostAsJsonAsync(
+            "api/users",
+            request,
+            ct
+        );
+    }
+
+    private async Task<HttpResponseMessage> SendVersionsCore(int userActionID, SendVersionsRequest request, CancellationToken ct = default)
+    {
+        using (var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"api/actions/{userActionID}/versions"){Content = JsonContent.Create(request)})
+        {
+            return await SendAuthenticated(httpRequest, ct);
+        }
+    }
+
+    private async Task<HttpResponseMessage> UploadProjectCore(UploadProjectRequest request, CancellationToken ct = default)
+    {
+        using (var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/projects"){Content = JsonContent.Create(request)})
+        {
+            return await SendAuthenticated(httpRequest, ct);
+        }
+    }
+
+    public async Task<bool> LoginAsNewUser(string username, string password, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
         try
         {
+            _currentUserID = null;
             await _tokenStore.ClearTokens();
             var request = new LoginRequest(username, password);
 
             using (var response = await _httpClient.PostAsJsonAsync("api/auth/login?useCookies=false", request, ct))
             {
-                if (!response.IsSuccessStatusCode)
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
                     return false;
                 }
@@ -137,8 +206,43 @@ public class ApiClient
                 }
 
                 await SaveTokenResponse(tokenResponse);
+            }
+
+            using (var response = await GetCurrentUserCore(ct))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    await _tokenStore.ClearTokens();
+                    return false;
+                }
+
+                var userResponse = await response.Content.ReadFromJsonAsync<UserResponse>(cancellationToken: ct);
+
+                if (userResponse is null)
+                {
+                    await _tokenStore.ClearTokens();
+                    return false;
+                }
+
+                await UserService.Store(userResponse.ID, userResponse.UserName, userResponse.Email);
+                _currentUserID = userResponse.ID;
+                var tokens = await _tokenStore.GetTokens();
+                
+                if (tokens is not null && _tokenStore.PersistentStorageAvailable)
+                {
+                    await _tokenStore.PersistRefreshToken(userResponse.ID, tokens.RefreshToken);
+                }
+
                 return true;
             }
+        }
+
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _currentUserID = null;
+            await _tokenStore.ClearTokens();
+            return false;
         }
 
         finally
@@ -147,13 +251,72 @@ public class ApiClient
         }
     }
 
-    public async Task Logout()
+    public async Task<bool> LoginAsStoredUser(int userID, CancellationToken ct = default)
     {
-        await _refreshLock.WaitAsync();
+        await _refreshLock.WaitAsync(ct);
+
+        try
+        {
+            _currentUserID = userID;
+
+            if (!await _tokenStore.LoadPersistedRefreshToken(_currentUserID.Value))
+            {
+                await _tokenStore.ClearTokens();
+                _currentUserID = null;
+                return false;
+            }
+
+            if (!await RefreshToken(ct))
+            {
+                _currentUserID = null;
+                return false;
+            }
+
+            using (var response = await GetCurrentUserCore(ct))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    await _tokenStore.ClearTokens();
+                    _currentUserID = null;
+                    return false;
+                }
+
+                var userResponse = await response.Content.ReadFromJsonAsync<UserResponse>(cancellationToken: ct);
+
+                if (userResponse is null)
+                {
+                    await _tokenStore.ClearTokens();
+                    _currentUserID = null;
+                    return false;
+                }
+
+                await UserService.UpdateInformation(userResponse.ID, userResponse.UserName, userResponse.Email);
+                return true;
+            }
+        }
+
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _currentUserID = null;
+            await _tokenStore.ClearTokens();
+            return false;
+        }
+
+        finally
+        {
+            _refreshLock.Release();
+        }
+    }
+
+    public async Task Logout(CancellationToken ct)
+    {
+        await _refreshLock.WaitAsync(ct);
 
         try
         {
             await _tokenStore.ClearTokens();
+            _currentUserID = null;
         }
         
         finally
@@ -162,36 +325,145 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> CreateAction(CreateActionRequest request, CancellationToken ct = default)
+    public async Task<HttpResponseMessage> GetCurrentUser(CancellationToken ct)
     {
-        using (var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/actions"){Content = JsonContent.Create(request)})
+        await _refreshLock.WaitAsync(ct);
+
+        try
         {
-            return await SendAuthenticated(httpRequest, ct);
+            return await GetCurrentUserCore(ct);
+        }
+        
+        finally
+        {
+            _refreshLock.Release();
         }
     }
 
-    public async Task<HttpResponseMessage> Register(RegisterRequest request, CancellationToken ct = default)
+    public async Task<HttpResponseMessage> GetProject(int projectID, CancellationToken ct)
     {
-        return await _httpClient.PostAsJsonAsync(
-            "api/users",
-            request,
-            ct
-        );
-    }
+        await _refreshLock.WaitAsync(ct);
 
-    public async Task<HttpResponseMessage> SendVersions(int userActionID, SendVersionsRequest request, CancellationToken ct = default)
-    {
-        using (var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"api/actions/{userActionID}/versions"){Content = JsonContent.Create(request)})
+        try
         {
-            return await SendAuthenticated(httpRequest, ct);
+            return await GetProjectCore(projectID, ct);
+        }
+        
+        finally
+        {
+            _refreshLock.Release();
         }
     }
 
-    public async Task<HttpResponseMessage> UploadProject(UploadProjectRequest request, CancellationToken ct = default)
+    public async Task<HttpResponseMessage> GetTask(int taskID, CancellationToken ct)
     {
-        using (var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/projects"){Content = JsonContent.Create(request)})
+        await _refreshLock.WaitAsync(ct);
+
+        try
         {
-            return await SendAuthenticated(httpRequest, ct);
+            return await GetTaskCore(taskID, ct);
+        }
+        
+        finally
+        {
+            _refreshLock.Release();
+        }
+    }
+
+    public async Task<HttpResponseMessage> GetTag(int tagID, CancellationToken ct)
+    {
+        await _refreshLock.WaitAsync(ct);
+
+        try
+        {
+            return await GetTagCore(tagID, ct);
+        }
+        
+        finally
+        {
+            _refreshLock.Release();
+        }
+    }
+
+    public async Task<HttpResponseMessage> Register(string username, string email, string password, CancellationToken ct)
+    {
+        await _refreshLock.WaitAsync(ct);
+
+        try
+        {
+            RegisterRequest request = new(username, email, password);
+            return await RegisterCore(request, ct);
+        }
+        
+        finally
+        {
+            _refreshLock.Release();
+        }
+    }
+
+    public async Task<HttpResponseMessage> CreateAction(int userID, int projectID, ActionType actionType, DomainEntityType targetType, int targetID, DomainEntityType? relatedEntityType, int? relatedEntityID, Change? change, CancellationToken ct)
+    {
+        await _refreshLock.WaitAsync(ct);
+
+        try
+        {
+            CreateActionRequest request = new(userID, projectID, actionType, targetType, targetID, relatedEntityType, relatedEntityID, change);
+            return await CreateActionCore(request, ct);
+        }
+        
+        finally
+        {
+            _refreshLock.Release();
+        }
+    }
+
+    public async Task<HttpResponseMessage> SendVersions(int userActionID, Dictionary<EntityIdPair, int> versions, CancellationToken ct)
+    {
+        await _refreshLock.WaitAsync(ct);
+
+        try
+        {
+            SendVersionsRequest request = new(versions);
+            return await SendVersionsCore(userActionID, request, ct);
+        }
+        
+        finally
+        {
+            _refreshLock.Release();
+        }
+    }
+
+    public async Task<HttpResponseMessage> UploadProject(string name, string description, ProjectStatus status, List<TaskItem> tasks, List<Tag> tags, List<TaskTagLink> taskTagLinks, CancellationToken ct)
+    {
+        await _refreshLock.WaitAsync(ct);
+
+        try
+        {
+            List<CreateTaskRequest> createTaskRequests = [];
+            foreach (var task in tasks)
+            {
+                createTaskRequests.Add(new(0, task.Name, task.Description, task.Status, task.Priority, task.DueDate));
+            }
+
+            List<CreateTagRequest> createTagRequests = [];
+            foreach (var tag in tags)
+            {
+                createTagRequests.Add(new(0, tag.Name));
+            }
+
+            List<CreateTaskTagLinkRequest> createTaskTagLinkRequests = [];
+            foreach (var taskTagLink in taskTagLinks)
+            {
+                createTaskTagLinkRequests.Add(new(taskTagLink.TaskID, taskTagLink.TagID));
+            }
+
+            UploadProjectRequest request = new(name, description, status, createTaskRequests, createTagRequests, createTaskTagLinkRequests);
+            return await UploadProjectCore(request, ct);
+        }
+        
+        finally
+        {
+            _refreshLock.Release();
         }
     }
 }
