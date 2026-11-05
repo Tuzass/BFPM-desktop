@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Domain.Enums;
+using Infrastructure.Database;
 using Infrastructure.Entities;
 using Infrastructure.Enums;
 using Services;
@@ -145,10 +146,10 @@ Left/Right | Moves cursor within field");
         Console.Write(new string(' ', 200));
     }
 
-    public static async Task<Change?> Run(int projectID)
+    public static async Task<Change?> Run(AppDbContext context, int projectID)
     {
         var currentUser = await UserService.GetCurrentUser();
-        var project = await DomainService.GetProjectByID(projectID);
+        var project = await DomainService.GetProjectByID(context, projectID);
 
         string statusString = project.Status switch
         {
@@ -206,7 +207,7 @@ Left/Right | Moves cursor within field");
                         continue;
                     }
 
-                    if (await DomainService.IsProjectDuplicate(currentUser.ID, fieldContents[0].Trim()))
+                    if (await DomainService.IsProjectDuplicate(context, currentUser.ID, fieldContents[0].Trim()))
                     {
                         PrintErrorMessage($"Current user already has a project named '{fieldContents[0].Trim()}' (case-insensitive)!");
                         continue;

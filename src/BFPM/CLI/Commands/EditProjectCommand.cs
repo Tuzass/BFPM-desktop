@@ -1,7 +1,8 @@
 using System;
 using System.Threading.Tasks;
-using BFPM.CLI.Pages;
 using Services;
+using Infrastructure.Database;
+using BFPM.CLI.Pages;
 using BFPM.CLI.Exceptions;
 
 namespace BFPM.CLI.Commands;
@@ -24,24 +25,29 @@ public class EditProjectCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, ProjectID))
+        using (var context = AppDbContextFactory.CreateContext())
         {
-            throw new Services.Exceptions.UnauthorizedAccessException();
+            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, ProjectID))
+            {
+                throw new Services.Exceptions.UnauthorizedAccessException();
+            }
+
+            if (!await DomainService.IsProjectLocal(context, ProjectID))
+            {
+                throw new NonlocalChangeException();
+            }
+
+            var localChange = await ProjectEditPage.Run(context, ProjectID);
+
+            if (localChange is null)
+            {
+                return;
+            }
+            
+            await DomainService.ApplyChange(context, localChange);
+            await context.SaveChangesAsync();
+
+            Console.WriteLine($"Project {ProjectID} changed\nName: {localChange.Name}, Description: {localChange.Description}, Status: {localChange.Status}");
         }
-
-        if (!await DomainService.IsProjectLocal(ProjectID))
-        {
-            throw new NonlocalChangeException();
-        }
-
-        var localChange = await ProjectEditPage.Run(ProjectID);
-
-        if (localChange is null)
-        {
-            return;
-        }
-
-        Console.WriteLine($"Project {ProjectID} changed\nName: {localChange.Name}, Description: {localChange.Description}, Status: {localChange.Status}");
-        await DomainService.ApplyChange(localChange);
     }
 }

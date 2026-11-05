@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Infrastructure.Database;
 using Services;
 
 namespace BFPM.CLI.Commands;
@@ -22,11 +23,15 @@ public class CopyProjectCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        if (await DomainService.IsUserAssignedToProject(currentUser.ID, ProjectID))
+        using (var context = AppDbContextFactory.CreateContext())
         {
-            await DomainService.CopyProject(currentUser.ID, ProjectID);
-        }
+            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, ProjectID))
+            {
+                throw new UnauthorizedAccessException();
+            }
 
-        throw new UnauthorizedAccessException();
+            await DomainService.CopyProject(context, currentUser.ID, ProjectID);
+            await context.SaveChangesAsync();
+        }
     }
 }

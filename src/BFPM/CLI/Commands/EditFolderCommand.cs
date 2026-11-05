@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
-using BFPM.CLI.Pages;
+using Infrastructure.Database;
 using Services;
-using Services.Exceptions;
+using BFPM.CLI.Pages;
 
 namespace BFPM.CLI.Commands;
 
@@ -24,19 +24,24 @@ public class EditFolderCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        if (!await DomainService.IsFolderOwnedByUser(currentUser.ID, FolderID))
+        using (var context = AppDbContextFactory.CreateContext())
         {
-            throw new Services.Exceptions.UnauthorizedAccessException();
+            if (!await DomainService.IsFolderOwnedByUser(context, currentUser.ID, FolderID))
+            {
+                throw new Services.Exceptions.UnauthorizedAccessException();
+            }
+
+            var localChange = await FolderEditPage.Run(context, currentUser.ID, FolderID);
+
+            if (localChange is null)
+            {
+                return;
+            }
+
+            await DomainService.ApplyChange(context, localChange);
+            await context.SaveChangesAsync();
+
+            Console.WriteLine($"Folder {FolderID} changed\nName: {localChange.Name}, Description: {localChange.Description}");
         }
-
-        var localChange = await FolderEditPage.Run(currentUser.ID, FolderID);
-
-        if (localChange is null)
-        {
-            return;
-        }
-
-        Console.WriteLine($"Folder {FolderID} changed\nName: {localChange.Name}, Description: {localChange.Description}");
-        await DomainService.ApplyChange(localChange);
     }
 }

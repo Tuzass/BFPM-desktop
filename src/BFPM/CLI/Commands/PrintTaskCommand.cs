@@ -1,6 +1,6 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
+using Infrastructure.Database;
 using Services;
 
 namespace BFPM.CLI.Commands;
@@ -21,17 +21,20 @@ public class PrintTaskCommand : ICommand
 
     public async Task Execute()
     {
-        var task = await DomainService.GetTaskByID(TaskID);
-
         var currentUser = await UserService.GetCurrentUser();
 
-        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, task.ProjectID))
-        {
-            throw new UnauthorizedAccessException();
-        }
+        using (var context = AppDbContextFactory.CreateContext())
+        {   
+            var task = await DomainService.GetTaskByID(context, TaskID);
 
-        var tags = await DomainService.GetTagsByTask(TaskID);
-        Console.WriteLine(Utils.TaskToString(task));
-        Console.WriteLine($"Tags: {Utils.TagListToString(tags)}");
+            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, task.ProjectID))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var tags = await DomainService.GetTagsByTask(context, TaskID);
+            Console.WriteLine(Utils.TaskToString(task));
+            Console.WriteLine($"Tags: {Utils.TagListToString(tags)}");
+        }
     }
 }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Domain.Entities;
+using Infrastructure.Database;
 using Infrastructure.Entities;
 using Infrastructure.Enums;
 using Services;
@@ -128,9 +129,9 @@ Left/Right | Moves cursor within field");
         Console.Write(new string(' ', 200));
     }
 
-    public static async Task<Change?> Run(int tagID)
+    public static async Task<Change?> Run(AppDbContext context, int tagID)
     {
-        var tag = await DomainService.GetTagByID(tagID);
+        var tag = await DomainService.GetTagByID(context, tagID);
         string name = tag.Name;
         int minCursorHorizontalPosition = 6;
 
@@ -164,7 +165,7 @@ Left/Right | Moves cursor within field");
                         continue;
                     }
 
-                    if (await DomainService.IsTagDuplicate(tag.ProjectID, name.Trim(), tagID))
+                    if (await DomainService.IsTagDuplicate(context, tag.ProjectID, name.Trim(), tagID))
                     {
                         PrintErrorMessage($"Project already has a tag named '{name.Trim()}' (case-insensitive)!");
                         continue;

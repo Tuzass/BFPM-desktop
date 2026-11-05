@@ -1,9 +1,9 @@
-using System.Linq;
+using System;
 using System.Threading.Tasks;
+using Infrastructure.Database;
+using Services;
 using BFPM.CLI.Exceptions;
 using BFPM.CLI.Pages;
-using Services;
-using Services.Exceptions;
 
 namespace BFPM.CLI.Commands;
 
@@ -25,25 +25,31 @@ public class EditTagCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        var tag = await DomainService.GetTagByID(TagID);
-
-        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, tag.ProjectID))
+        using (var context = AppDbContextFactory.CreateContext())
         {
-            throw new UnauthorizedAccessException();
+            var tag = await DomainService.GetTagByID(context, TagID);
+
+            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, tag.ProjectID))
+            {
+                throw new Services.Exceptions.UnauthorizedAccessException();
+            }
+
+            if (!await DomainService.IsProjectLocal(context, tag.ProjectID))
+            {
+                throw new NonlocalChangeException();
+            }
+
+            var localChange = await TagEditPage.Run(context, TagID);
+
+            if (localChange is null)
+            {
+                return;
+            }
+
+            await DomainService.ApplyChange(context, localChange);
+            await context.SaveChangesAsync();
+
+            Console.WriteLine($"Tag {TagID} changed\nName: {localChange.Name}");
         }
-
-        if (!await DomainService.IsProjectLocal(tag.ProjectID))
-        {
-            throw new NonlocalChangeException();
-        }
-
-        var localChange = await TagEditPage.Run(TagID);
-
-        if (localChange is null)
-        {
-            return;
-        }
-
-        await DomainService.ApplyChange(localChange);
     }
 }

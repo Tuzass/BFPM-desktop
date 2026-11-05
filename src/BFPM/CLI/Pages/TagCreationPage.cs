@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Domain.Entities;
+using Infrastructure.Database;
 using Services;
 
 namespace BFPM.CLI.Pages;
@@ -126,7 +127,7 @@ Left/Right | Moves cursor within field");
         Console.Write(new string(' ', 200));
     }
 
-    public static async Task<Tag?> Run(int projectID)
+    public static async Task<Tag?> Run(AppDbContext context, int projectID)
     {
         var currentUser = await UserService.GetCurrentUser();
 
@@ -163,7 +164,7 @@ Left/Right | Moves cursor within field");
                         continue;
                     }
 
-                    if (await DomainService.IsTagDuplicate(projectID, name.Trim()))
+                    if (await DomainService.IsTagDuplicate(context, projectID, name.Trim()))
                     {
                         PrintErrorMessage($"Project already has a tag named '{name.Trim()}' (case-insensitive)!");
                         continue;

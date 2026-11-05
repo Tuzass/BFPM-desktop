@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
+using Domain.Entities;
 using Domain.Enums;
+using Infrastructure.Database;
 using Infrastructure.Entities;
 using Infrastructure.Enums;
 using Services;
@@ -154,10 +156,9 @@ Left/Right | Moves cursor within field");
         Console.Write(new string(' ', 200));
     }
 
-    public static async Task<Change?> Run(int taskID)
+    public static async Task<Change?> Run(AppDbContext context, int taskID)
     {
-        var currentUser = await UserService.GetCurrentUser();
-        var task = await DomainService.GetTaskByID(taskID);
+        var task = await DomainService.GetTaskByID(context, taskID);
 
         string statusString = task.Status switch
         {
@@ -229,7 +230,7 @@ Left/Right | Moves cursor within field");
                         continue;
                     }
 
-                    if (await DomainService.IsTaskDuplicate(task.ProjectID, fieldContents[0].Trim()))
+                    if (await DomainService.IsTaskDuplicate(context, task.ProjectID, fieldContents[0].Trim()))
                     {
                         PrintErrorMessage($"Current user already has a task named '{fieldContents[0].Trim()}' (case-insensitive)!");
                         continue;

@@ -1,5 +1,5 @@
-using System.Linq;
 using System.Threading.Tasks;
+using Infrastructure.Database;
 using Services;
 using Services.Exceptions;
 using BFPM.CLI.Exceptions;
@@ -24,18 +24,22 @@ public class DeleteTaskCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        var task = await DomainService.GetTaskByID(TaskID);
-
-        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, task.ProjectID))
+        using (var context = AppDbContextFactory.CreateContext())
         {
-            throw new UnauthorizedAccessException();
-        }
+            var task = await DomainService.GetTaskByID(context, TaskID);
 
-        if (!await DomainService.IsProjectLocal(task.ProjectID))
-        {
-            throw new NonlocalChangeException();
+            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, task.ProjectID))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            if (!await DomainService.IsProjectLocal(context, task.ProjectID))
+            {
+                throw new NonlocalChangeException();
+            }
+            
+            await DomainService.DeleteTask(context, TaskID);
+            await context.SaveChangesAsync();
         }
-        
-        await DomainService.DeleteTask(TaskID);
     }
 }

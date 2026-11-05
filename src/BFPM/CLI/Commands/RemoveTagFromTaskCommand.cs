@@ -1,5 +1,5 @@
-using System.Linq;
 using System.Threading.Tasks;
+using Infrastructure.Database;
 using Services;
 using Services.Exceptions;
 using BFPM.CLI.Exceptions;
@@ -26,25 +26,29 @@ public class RemoveTagFromTaskCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        var task = await DomainService.GetTaskByID(TaskID);
-        var tag = await DomainService.GetTagByID(TagID);
-
-        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, task.ProjectID)
-         || !await DomainService.IsUserAssignedToProject(currentUser.ID, tag.ProjectID))
+        using (var context = AppDbContextFactory.CreateContext())
         {
-            throw new UnauthorizedAccessException();
-        }
+            var task = await DomainService.GetTaskByID(context, TaskID);
+            var tag = await DomainService.GetTagByID(context, TagID);
 
-        if (task.ProjectID != tag.ProjectID)
-        {
-            throw new NonmatchingTaskTagException();
-        }
+            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, task.ProjectID)
+            || !await DomainService.IsUserAssignedToProject(context, currentUser.ID, tag.ProjectID))
+            {
+                throw new UnauthorizedAccessException();
+            }
 
-        if (!await DomainService.IsProjectLocal(task.ProjectID))
-        {
-            throw new NonlocalChangeException();
-        }
+            if (task.ProjectID != tag.ProjectID)
+            {
+                throw new NonmatchingTaskTagException();
+            }
 
-        await DomainService.RemoveTagFromTask(TaskID, TagID);
+            if (!await DomainService.IsProjectLocal(context, task.ProjectID))
+            {
+                throw new NonlocalChangeException();
+            }
+
+            await DomainService.RemoveTagFromTask(context, TaskID, TagID);
+            await context.SaveChangesAsync();
+        }
     }
 }

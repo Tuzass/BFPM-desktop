@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using System.Linq;
+using Infrastructure.Database;
 using Services;
 using Services.Exceptions;
 
@@ -25,16 +25,20 @@ public class RemoveProjectFromFolderCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        if (!await DomainService.IsFolderOwnedByUser(currentUser.ID, FolderID))
+        using (var context = AppDbContextFactory.CreateContext())
         {
-            throw new UnauthorizedAccessException();
-        }
+            if (!await DomainService.IsFolderOwnedByUser(context, currentUser.ID, FolderID))
+            {
+                throw new UnauthorizedAccessException();
+            }
 
-        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, ProjectID))
-        {
-            throw new UnauthorizedAccessException();
-        }
+            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, ProjectID))
+            {
+                throw new UnauthorizedAccessException();
+            }
 
-        await DomainService.RemoveProjectFromFolder(FolderID, ProjectID);
+            await DomainService.RemoveProjectFromFolder(context, FolderID, ProjectID);
+            await context.SaveChangesAsync();
+        }
     }
 }

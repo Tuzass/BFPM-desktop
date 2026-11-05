@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Infrastructure.Database;
 using Services;
 
 namespace BFPM.CLI.Commands;
@@ -21,15 +22,18 @@ public class PrintFolderCommand : ICommand
     public async Task Execute()
     {
         var currentUser = await UserService.GetCurrentUser();
-        
-        if (!await DomainService.IsFolderOwnedByUser(currentUser.ID, FolderID))
-        {
-            throw new UnauthorizedAccessException();
-        }
 
-        var folder = await DomainService.GetFolderByID(FolderID);
-        var projects = await DomainService.GetProjectsByFolder(FolderID);
-        Console.WriteLine(Utils.FolderToString(folder));
-        Console.WriteLine($"Projects: {Utils.ProjectListToString(projects)}");
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            if (!await DomainService.IsFolderOwnedByUser(context, currentUser.ID, FolderID))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var folder = await DomainService.GetFolderByID(context, FolderID);
+            var projects = await DomainService.GetProjectsByFolder(context, FolderID);
+            Console.WriteLine(Utils.FolderToString(folder));
+            Console.WriteLine($"Projects: {Utils.ProjectListToString(projects)}");
+        }
     }
 }

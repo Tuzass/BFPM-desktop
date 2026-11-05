@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Domain.Entities;
 using Domain.Enums;
+using Infrastructure.Database;
 using Services;
 
 namespace BFPM.CLI.Pages;
@@ -140,7 +141,7 @@ Left/Right | Moves cursor within field");
         Console.Write(new string(' ', 200));
     }
 
-    public static async Task<Project?> Run(int currentUserID)
+    public static async Task<Project?> Run(AppDbContext context, int currentUserID)
     {
         List<string> fieldNames = ["Name", "Description"];
         List<string> fieldContents = ["", ""];
@@ -188,7 +189,7 @@ Left/Right | Moves cursor within field");
                         continue;
                     }
 
-                    if (await DomainService.IsProjectDuplicate(currentUserID, fieldContents[0].Trim()))
+                    if (await DomainService.IsProjectDuplicate(context, currentUserID, fieldContents[0].Trim()))
                     {
                         PrintErrorMessage($"Current user already has a project named '{fieldContents[0].Trim()}' (case-insensitive)!");
                         continue;

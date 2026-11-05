@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Infrastructure.Database;
 using Infrastructure.Entities;
 using Infrastructure.Enums;
 using Services;
@@ -140,9 +141,9 @@ Left/Right | Moves cursor within field");
         Console.Write(new string(' ', 200));
     }
 
-    public static async Task<Change?> Run(int currentUserID, int folderID)
+    public static async Task<Change?> Run(AppDbContext context, int currentUserID, int folderID)
     {
-        var folder = await DomainService.GetFolderByID(folderID);
+        var folder = await DomainService.GetFolderByID(context, folderID);
 
         List<string> fieldNames = ["Name", "Description"];
         List<string> fieldContents = [folder.Name, folder.Description];
@@ -196,7 +197,7 @@ Left/Right | Moves cursor within field");
                         continue;
                     }
 
-                    if (await DomainService.IsFolderDuplicate(currentUserID, fieldContents[0].Trim()))
+                    if (await DomainService.IsFolderDuplicate(context, currentUserID, fieldContents[0].Trim()))
                     {
                         PrintErrorMessage($"Current user already has a folder named '{fieldContents[0].Trim()}' (case-insensitive)!");
                         continue;

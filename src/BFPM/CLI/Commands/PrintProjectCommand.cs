@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Infrastructure.Database;
 using Services;
 
 namespace BFPM.CLI.Commands;
@@ -22,18 +23,21 @@ public class PrintProjectCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, ProjectID))
+        using (var context = AppDbContextFactory.CreateContext())
         {
-            throw new UnauthorizedAccessException();
+            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, ProjectID))
+            {
+                throw new UnauthorizedAccessException();
+            }
+
+            var project = await DomainService.GetProjectByID(context, ProjectID);
+            Console.WriteLine(Utils.ProjectToString(project));
+
+            var tasks = await DomainService.GetTasksByProject(context, ProjectID);
+            Console.WriteLine($"Tasks: {Utils.TaskListToString(tasks)}");
+
+            var tags = await DomainService.GetTagsByProject(context, ProjectID);
+            Console.WriteLine($"Tags: {Utils.TagListToString(tags)}");
         }
-
-        var project = await DomainService.GetProjectByID(ProjectID);
-        Console.WriteLine(Utils.ProjectToString(project));
-
-        var tasks = await DomainService.GetTasksByProject(ProjectID);
-        Console.WriteLine($"Tasks: {Utils.TaskListToString(tasks)}");
-
-        var tags = await DomainService.GetTagsByProject(ProjectID);
-        Console.WriteLine($"Tags: {Utils.TagListToString(tags)}");
     }
 }

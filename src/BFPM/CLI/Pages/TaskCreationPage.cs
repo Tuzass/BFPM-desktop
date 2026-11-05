@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Threading.Tasks;
 using Domain.Entities;
 using Domain.Enums;
+using Infrastructure.Database;
 using Services;
 
 namespace BFPM.CLI.Pages;
@@ -153,7 +154,7 @@ Left/Right | Moves cursor within field");
         Console.Write(new string(' ', 200));
     }
 
-    public static async Task<TaskItem?> Run(int projectID)
+    public static async Task<TaskItem?> Run(AppDbContext context, int projectID)
     {
         List<string> fieldNames = ["Name", "Description", "Status", "Priority", "Due date"];
         List<string> fieldContents = ["", "", "", "", ""];
@@ -204,7 +205,7 @@ Left/Right | Moves cursor within field");
                         continue;
                     }
 
-                    if (await DomainService.IsTaskDuplicate(projectID, fieldContents[0].Trim()))
+                    if (await DomainService.IsTaskDuplicate(context, projectID, fieldContents[0].Trim()))
                     {
                         PrintErrorMessage($"Current user already has a task named '{fieldContents[0].Trim()}' (case-insensitive)!");
                         continue;

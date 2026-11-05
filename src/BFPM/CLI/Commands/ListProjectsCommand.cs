@@ -1,7 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
-using Domain.Entities;
+using Infrastructure.Database;
 using Services;
 
 namespace BFPM.CLI.Commands;
@@ -16,19 +15,22 @@ public class ListProjectsCommand : ICommand
     public async Task Execute()
     {
         var currentUser = await UserService.GetCurrentUser();
-        
-        List<Project> projects = await DomainService.GetProjectsByUser(currentUser.ID);
 
-        if (projects.Count == 0)
+        using (var context = AppDbContextFactory.CreateContext())
         {
-            Console.WriteLine("The current user isn't assigned to any project");
-            return;
-        }
+            var projects = await DomainService.GetProjectsByUser(context, currentUser.ID);
 
-        Console.WriteLine("ID | Project Name");
-        foreach (var project in projects)
-        {
-            Console.WriteLine($"{project.ID} | {project.Name}");
+            if (projects.Count == 0)
+            {
+                Console.WriteLine("The current user isn't assigned to any project");
+                return;
+            }
+
+            Console.WriteLine("ID | Project Name");
+            foreach (var project in projects)
+            {
+                Console.WriteLine($"{project.ID} | {project.Name}");
+            }
         }
     }
 }

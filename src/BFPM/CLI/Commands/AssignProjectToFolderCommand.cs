@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
+using Infrastructure.Database;
 using Services;
-using Services.Exceptions;
 
 namespace BFPM.CLI.Commands;
 
@@ -25,12 +25,16 @@ public class AssignProjectToFolderCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        var folders = await DomainService.GetFoldersByUser(currentUser.ID);
-        var folder = folders.SingleOrDefault(f => f.ID == FolderID);
+        using (var context = AppDbContextFactory.CreateContext())
+        {
+            var folders = await DomainService.GetFoldersByUser(context, currentUser.ID);
+            var folder = folders.SingleOrDefault(f => f.ID == FolderID);
 
-        var projects = await DomainService.GetProjectsByUser(currentUser.ID);
-        var project = projects.SingleOrDefault(p => p.ID == ProjectID);
+            var projects = await DomainService.GetProjectsByUser(context, currentUser.ID);
+            var project = projects.SingleOrDefault(p => p.ID == ProjectID);
 
-        await DomainService.AssignProjectToFolder(FolderID, ProjectID);
+            await DomainService.AssignProjectToFolder(context, FolderID, ProjectID);
+            await context.SaveChangesAsync();
+        }
     }
 }

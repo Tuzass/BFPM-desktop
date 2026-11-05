@@ -1,5 +1,5 @@
-using System.Linq;
 using System.Threading.Tasks;
+using Infrastructure.Database;
 using Services;
 using Services.Exceptions;
 
@@ -23,11 +23,15 @@ public class DeleteFolderCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        if (!await DomainService.IsFolderOwnedByUser(currentUser.ID, FolderID))
+        using (var context = AppDbContextFactory.CreateContext())
         {
-            throw new UnauthorizedAccessException();
-        }
+            if (!await DomainService.IsFolderOwnedByUser(context, currentUser.ID, FolderID))
+            {
+                throw new UnauthorizedAccessException();
+            }
 
-        await DomainService.DeleteFolder(FolderID);
+            await DomainService.DeleteFolder(context, FolderID);
+            await context.SaveChangesAsync();
+        }
     }
 }

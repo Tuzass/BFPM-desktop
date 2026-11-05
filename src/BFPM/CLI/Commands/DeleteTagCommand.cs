@@ -1,6 +1,6 @@
-using System.Linq;
 using System.Threading.Tasks;
 using BFPM.CLI.Exceptions;
+using Infrastructure.Database;
 using Services;
 using Services.Exceptions;
 
@@ -24,18 +24,22 @@ public class DeleteTagCommand : ICommand
     {
         var currentUser = await UserService.GetCurrentUser();
 
-        var tag = await DomainService.GetTagByID(TagID);
-
-        if (!await DomainService.IsUserAssignedToProject(currentUser.ID, tag.ProjectID))
+        using (var context = AppDbContextFactory.CreateContext())
         {
-            throw new UnauthorizedAccessException();
-        }
+            var tag = await DomainService.GetTagByID(context, TagID);
 
-        if (!await DomainService.IsProjectLocal(tag.ProjectID))
-        {
-            throw new NonlocalChangeException();
-        }
+            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, tag.ProjectID))
+            {
+                throw new UnauthorizedAccessException();
+            }
 
-        await DomainService.DeleteTag(TagID);
+            if (!await DomainService.IsProjectLocal(context, tag.ProjectID))
+            {
+                throw new NonlocalChangeException();
+            }
+
+            await DomainService.DeleteTag(context, TagID);
+            await context.SaveChangesAsync();
+        }
     }
 }
