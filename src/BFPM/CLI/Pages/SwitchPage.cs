@@ -77,6 +77,26 @@ public static class SwitchPage
         Console.Write(new string(' ', 8));
     }
 
+    private static void PrintEditingKeyInstructions()
+    {
+        Console.SetCursorPosition(0, 7);
+        Console.Write(@"ESC | Return to home page
+Up/Down | Move between users
+Enter | Select user");
+    }
+
+    private static void ClearEditingKeyInstructions()
+    {
+        Console.SetCursorPosition(0, 7);
+        Console.Write(new string(' ', 25));
+
+        Console.SetCursorPosition(0, 8);
+        Console.Write(new string(' ', 28));
+
+        Console.SetCursorPosition(0, 9);
+        Console.Write(new string(' ', 19));
+    }
+
     private static void PrintErrorMessage(string message)
     {
         Console.SetCursorPosition(0, 5);
@@ -113,6 +133,8 @@ public static class SwitchPage
             PrintErrorMessage(errorMessage);
         }
 
+        PrintEditingKeyInstructions();
+
         while (true)
         {
             Console.CursorVisible = false;
@@ -126,6 +148,8 @@ public static class SwitchPage
                 PrintErrorMessage(errorMessage);
             }
 
+            PrintEditingKeyInstructions();
+
             if (key.Key == ConsoleKey.Enter)
             {
                 var selectedUser = users[userIndex];
@@ -133,6 +157,7 @@ public static class SwitchPage
 
                 ClearUserNames(userNames);
                 ClearErrorMessage();
+                ClearEditingKeyInstructions();
                 PrintConfirmationMessage($"Are you sure you want to log in as {selectedUser.Username}? You may be asked for your password.");
                 PrintConfirmationOptionIndicator(confirmationIndex);
                 PrintConfirmationOptions();
@@ -165,6 +190,8 @@ public static class SwitchPage
                                 PrintErrorMessage(errorMessage);
                             }
 
+                            PrintEditingKeyInstructions();
+
                             break;
                         }
 
@@ -194,6 +221,7 @@ public static class SwitchPage
             {
                 ClearUserNames(userNames);
                 ClearErrorMessage();
+                ClearEditingKeyInstructions();
                 Console.CursorVisible = true;
                 Console.Write("\x1b[?7h");
                 Console.Write("\x1b[?1049l");
