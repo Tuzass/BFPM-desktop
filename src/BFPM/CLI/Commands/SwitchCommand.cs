@@ -76,7 +76,8 @@ public class SwitchCommand : ICommand
                         Console.WriteLine($"Successfully logged in as: {credentials.Value.Key}");
                         return;
                     }
-                    Console.WriteLine("Invalid credentials!");
+
+                    errorMessage = "Invalid credentials!";
                 }
             }
 
