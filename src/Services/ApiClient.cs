@@ -200,6 +200,11 @@ public class ApiClient
                     return false;
                 }
 
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    throw new InexistentUserException();
+                }
+
                 var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: ct);
 
                 if (tokenResponse is null)

@@ -61,19 +61,19 @@ public class SwitchCommand : ICommand
                     return;
                 }
 
-                KeyValuePair<string, string>? credentials = new("", "");
+                List<string>? credentials = [user.Username, ""];
                 while (true)
                 {
-                    credentials = LoginPage.Run(credentials.Value.Key, credentials.Value.Value);
+                    credentials = LoginPage.Run(credentials, "Please enter your password");
 
-                    if (credentials is null)
+                    if (credentials is null || credentials.Count < 2)
                     {
                         break;
                     }
 
-                    if (await _apiClient.LoginWithCredentials(credentials.Value.Key, credentials.Value.Value))
+                    if (await _apiClient.LoginWithCredentials(credentials[0], credentials[1]))
                     {
-                        Console.WriteLine($"Successfully logged in as: {credentials.Value.Key}");
+                        Console.WriteLine($"Successfully logged in as: {credentials[0]}");
                         return;
                     }
 

@@ -51,7 +51,7 @@ public class Parser
             case TokenType.Login:
                 if (tokens[1].Type == TokenType.End)
                 {
-                    return new LoginCommand();
+                    return new LoginCommand(apiClient);
                 }
 
                 throw new UnexpectedTokenException();
