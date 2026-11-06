@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Net.Mail;
 using System.Text.RegularExpressions;
 using Domain.Entities;
 
@@ -113,5 +115,29 @@ Name: {tag.Name}";
     public static bool ValidateDomainEntityDescription(string description)
     {
         return description.Length < 2000;
+    }
+
+    public static bool ValidateUserName(string userName)
+    {
+        return userName.Length >= 3 && userName.Length <= 24;
+    }
+
+    public static bool ValidateEmail(string email)
+    {
+        try
+        {
+            var address = new MailAddress(email);
+            return address.Address == email;
+        }
+
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
+    public static bool ValidatePassword(string password)
+    {
+        return password.Length >= 8 && password.Length <= 24;
     }
 }
