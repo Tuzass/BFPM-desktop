@@ -2,8 +2,9 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using Services;
-using Services.Exceptions;
 using BFPM.CLI.Pages;
+using System;
+using Services.Exceptions;
 
 namespace BFPM.CLI.Commands;
 
@@ -24,24 +25,15 @@ public class SwitchCommand : ICommand
     public async Task Execute()
     {
         var users = await UserService.GetStoredRegisteredUsers();
-        users.Add(await UserService.GetLocalUser());
+        var localUser = await UserService.GetLocalUser();
+        users.Insert(0, localUser);
+        string? errorMessage = null;
 
         while (true)
         {
-            var selectedUserID = await SwitchPage.Run(users);
+            var selectedUserID = await SwitchPage.Run(users, errorMessage);
 
             if (selectedUserID is null)
-            {
-                return;
-            }
-
-            if (selectedUserID == 0)
-            {
-                await UserService.SwitchCurrentUser(0);
-                return;
-            }
-
-            if (await _apiClient.LoginWithPersistentToken(selectedUserID.Value))
             {
                 return;
             }
@@ -50,23 +42,47 @@ public class SwitchCommand : ICommand
 
             if (user is null)
             {
-                throw new InexistentUserException();
+                errorMessage = "There was an unexpected error; please select a user again.";
+                continue;
             }
 
-            KeyValuePair<string, string>? credentials = new("", "");
-            while (true)
+            if (selectedUserID == 0)
             {
-                credentials = LoginPage.Run(credentials.Value.Key, credentials.Value.Value);
+                await UserService.SwitchCurrentUser(0);
+                Console.WriteLine($"Successfully logged in as: {user.Username}");
+                return;
+            }
 
-                if (credentials is null)
+            try
+            {
+                if (await _apiClient.LoginWithPersistentToken(selectedUserID.Value))
                 {
-                    break;
+                    Console.WriteLine($"Successfully logged in as: {user.Username}");
+                    return;
                 }
 
-                if (await _apiClient.LoginWithCredentials(credentials.Value.Key, credentials.Value.Value))
+                KeyValuePair<string, string>? credentials = new("", "");
+                while (true)
                 {
-                    break;
+                    credentials = LoginPage.Run(credentials.Value.Key, credentials.Value.Value);
+
+                    if (credentials is null)
+                    {
+                        break;
+                    }
+
+                    if (await _apiClient.LoginWithCredentials(credentials.Value.Key, credentials.Value.Value))
+                    {
+                        Console.WriteLine($"Successfully logged in as: {credentials.Value.Key}");
+                        return;
+                    }
+                    Console.WriteLine("Invalid credentials!");
                 }
+            }
+
+            catch (ServerUnavailableException e)
+            {
+                errorMessage = e.Message;
             }
         }
     }

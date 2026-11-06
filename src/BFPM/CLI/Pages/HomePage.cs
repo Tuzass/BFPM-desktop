@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.Net.Http;
 using BFPM.CLI.Exceptions;
 using Services;
@@ -11,10 +12,16 @@ public class HomePage()
     private readonly static string StartMessage = @"BFPM 1.0.0 Command-Line Interface
 Type 'help' to see the available commands";
 
-    public static async void Run(string[] args)
+    public static async Task Run(string[] args)
     {
         var settings = SettingsService.GetSettings();
-        HttpClient httpClient = new(){BaseAddress = new Uri("https://localhost:7035")};
+
+        HttpClient httpClient = new()
+        {
+            BaseAddress = new Uri("https://localhost:7035"),
+            Timeout = TimeSpan.FromSeconds(5)
+        };
+
         ApiClient apiClient = new(httpClient);
         Console.WriteLine(StartMessage);
 
@@ -30,7 +37,7 @@ Type 'help' to see the available commands";
 
             try
             {
-                var tokens = Lexer.Tokenize(inputString);
+                var tokens = Lexer.Tokenize(inputString.Trim());
                 var command = Parser.Parse(tokens, apiClient);
 
                 if (command is null)
@@ -73,6 +80,10 @@ Type 'help' to see the available commands";
                     
                     case NoCurrentUserException:
                         Console.WriteLine("No user is currently selected! Please do 'switch' to select a user!");
+                        break;
+
+                    default:
+                        Console.WriteLine(e.Message);
                         break;
                 }
             }

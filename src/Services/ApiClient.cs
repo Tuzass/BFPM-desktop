@@ -4,6 +4,7 @@ using Domain.Enums;
 using Infrastructure.Entities;
 using Infrastructure.Enums;
 using Workflow.Enums;
+using Services.Exceptions;
 using API.Auth;
 using API.Requests;
 using API.Responses;
@@ -240,12 +241,12 @@ public class ApiClient
             }
         }
 
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception)
         {
             _currentUserID = null;
             await UserService.SwitchCurrentUser(null);
             await _tokenStore.ClearTokens();
-            return false;
+            throw new ServerUnavailableException();
         }
 
         finally
@@ -289,6 +290,13 @@ public class ApiClient
                     return false;
                 }
 
+                if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError
+                 || response.StatusCode == System.Net.HttpStatusCode.BadGateway
+                 || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    throw new ServerUnavailableException();
+                }
+
                 var userResponse = await response.Content.ReadFromJsonAsync<UserResponse>(cancellationToken: ct);
 
                 if (userResponse is null)
@@ -309,7 +317,7 @@ public class ApiClient
             _currentUserID = null;
             await UserService.SwitchCurrentUser(null);
             await _tokenStore.ClearTokens();
-            return false;
+            throw new ServerUnavailableException();
         }
 
         finally

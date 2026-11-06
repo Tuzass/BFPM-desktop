@@ -24,8 +24,8 @@ public static class SwitchPage
                 continue;
             }
 
-            Console.SetCursorPosition(2, 2 + i);
-            Console.Write($"  userNames[i]");
+            Console.SetCursorPosition(0, 2 + i);
+            Console.Write($"  {userNames[i]}");
         }
     }
 
@@ -40,7 +40,7 @@ public static class SwitchPage
 
     private static void PrintConfirmationOptionIndicator(int optionIndex)
     {
-        Console.SetCursorPosition(0, 6);
+        Console.SetCursorPosition(0, 4);
 
         if (optionIndex == 0)
         {
@@ -55,29 +55,41 @@ public static class SwitchPage
 
     private static void PrintConfirmationMessage(string message)
     {
-        Console.SetCursorPosition(0, 4);
+        Console.SetCursorPosition(0, 2);
         Console.Write(message);
     }
 
     private static void PrintConfirmationOptions()
     {
-        Console.SetCursorPosition(0, 7);
+        Console.SetCursorPosition(0, 5);
         Console.Write("Yes | No");
     }
 
     private static void ClearConfirmationOptions()
     {
-        Console.SetCursorPosition(0, 4);
+        Console.SetCursorPosition(0, 2);
         Console.Write(new string(' ', 200));
 
-        Console.SetCursorPosition(0, 6);
+        Console.SetCursorPosition(0, 4);
         Console.Write(new string(' ', 8));
 
-        Console.SetCursorPosition(0, 7);
+        Console.SetCursorPosition(0, 5);
         Console.Write(new string(' ', 8));
     }
 
-    public static async Task<int?> Run(List<User> users)
+    private static void PrintErrorMessage(string message)
+    {
+        Console.SetCursorPosition(0, 5);
+        Console.Write(message);
+    }
+
+    private static void ClearErrorMessage()
+    {
+        Console.SetCursorPosition(0, 5);
+        Console.Write(new string(' ', 200));
+    }
+
+    public static async Task<int?> Run(List<User> users, string? errorMessage = null)
     {
         Console.Write("\x1b[?1049h");
         Console.Write("\x1b[?7l");
@@ -96,6 +108,11 @@ public static class SwitchPage
         ClearUserNames(userNames);
         PrintUserNames(userNames, userIndex);
 
+        if (errorMessage is not null)
+        {
+            PrintErrorMessage(errorMessage);
+        }
+
         while (true)
         {
             Console.CursorVisible = false;
@@ -104,12 +121,19 @@ public static class SwitchPage
             ClearUserNames(userNames);
             PrintUserNames(userNames, userIndex);
 
+            if (errorMessage is not null)
+            {
+                PrintErrorMessage(errorMessage);
+            }
+
             if (key.Key == ConsoleKey.Enter)
             {
                 var selectedUser = users[userIndex];
                 int confirmationIndex = 0;
 
-                PrintConfirmationMessage($"Are you sure you want to log in as {selectedUser.Username}? You may be asked for your password if you were logged out.");
+                ClearUserNames(userNames);
+                ClearErrorMessage();
+                PrintConfirmationMessage($"Are you sure you want to log in as {selectedUser.Username}? You may be asked for your password.");
                 PrintConfirmationOptionIndicator(confirmationIndex);
                 PrintConfirmationOptions();
 
@@ -134,6 +158,13 @@ public static class SwitchPage
                         if (confirmationIndex == 1)
                         {
                             ClearConfirmationOptions();
+                            PrintUserNames(userNames, userIndex);
+                            
+                            if (errorMessage is not null)
+                            {
+                                PrintErrorMessage(errorMessage);
+                            }
+
                             break;
                         }
 
@@ -148,17 +179,24 @@ public static class SwitchPage
             else if (key.Key == ConsoleKey.UpArrow)
             {
                 userIndex = (userIndex - 1 + userCount) % userCount;
+                ClearUserNames(userNames);
                 PrintUserNames(userNames, userIndex);
             }
             
-            else if (key.Key == ConsoleKey.RightArrow)
+            else if (key.Key == ConsoleKey.DownArrow)
             {
                 userIndex = (userIndex - 1 + userCount) % userCount;
+                ClearUserNames(userNames);
                 PrintUserNames(userNames, userIndex);
             }
 
             else if (key.Key == ConsoleKey.Escape)
             {
+                ClearUserNames(userNames);
+                ClearErrorMessage();
+                Console.CursorVisible = true;
+                Console.Write("\x1b[?7h");
+                Console.Write("\x1b[?1049l");
                 return null;
             }
         }

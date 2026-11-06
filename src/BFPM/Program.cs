@@ -1,13 +1,14 @@
-﻿using Avalonia;
+﻿using System;
+using System.Threading.Tasks;
 using Services;
-using System;
+using Avalonia;
 
 namespace BFPM;
 
 sealed class Program
 {
     [STAThread]
-    public static void Main(string[] args)
+    public static async Task Main(string[] args)
     {
         UserService.CreateLocalUser();
 
@@ -19,7 +20,7 @@ sealed class Program
 
         if (args.Contains("--no-gui"))
         {
-            CLI.Pages.HomePage.Run(args);
+            await CLI.Pages.HomePage.Run(args);
         }
 
         else
