@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Domain.Entities;
-using Infrastructure.Database;
-using Services;
 
 namespace BFPM.CLI.Pages;
 
@@ -17,7 +14,7 @@ public class RegisterPage
     private static void PrintTitle()
     {
         Console.SetCursorPosition(0, 0);
-        Console.Write("Register a new user");
+        Console.Write("Register");
     }
 
     private static void PrintFields(List<string> fieldNames, List<string> fieldContents, int longestFieldLength)
@@ -211,7 +208,7 @@ Left/Right | Move cursor within field");
 
                     int confirmationIndex = 0;
                     ClearMainOptions(optionNames);
-                    PrintConfirmationMessage("Are you sure you want to create a new folder with these attributes?");
+                    PrintConfirmationMessage("Are you sure you want to register a new with these attributes?");
                     PrintConfirmationOptionIndicator(confirmationIndex);
                     PrintConfirmationOptions();
 
@@ -255,7 +252,7 @@ Left/Right | Move cursor within field");
                 {
                     int confirmationIndex = 0;
                     ClearMainOptions(optionNames);
-                    PrintConfirmationMessage("Are you sure you want to exit the folder creation page? Your modifications will be lost");
+                    PrintConfirmationMessage("Are you sure you want to exit the register page? Your modifications will be lost");
                     PrintConfirmationOptionIndicator(confirmationIndex);
                     PrintConfirmationOptions();
 
