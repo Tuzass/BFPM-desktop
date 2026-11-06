@@ -403,14 +403,64 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> Register(string username, string email, string password, CancellationToken ct = default)
+    public async Task<bool> Register(string username, string email, string password, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
         try
         {
             RegisterRequest request = new(username, email, password);
-            return await RegisterCore(request, ct);
+
+            using (var response = await RegisterCore(request, ct))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    return false;
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+                {
+                    var body = await response.Content.ReadFromJsonAsync<RegisterConflictResponse>(cancellationToken: ct);
+
+                    if (body is null)
+                    {
+                        throw new InvalidOperationException("Register conflict not found in HTTP response body");
+                    }
+
+                    if (body.Field == "username")
+                    {
+                        throw new DuplicateUserNameException();
+                    }
+
+                    if (body.Field == "email")
+                    {
+                        throw new DuplicateEmailException();
+                    }
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError
+                 || response.StatusCode == System.Net.HttpStatusCode.BadGateway
+                 || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    throw new ServerUnavailableException();
+                }
+
+                var userResponse = await response.Content.ReadFromJsonAsync<UserResponse>(cancellationToken: ct);
+
+                if (userResponse is null)
+                {
+                    return false;
+                }
+
+                await UserService.StoreOrUpdate(userResponse.ID, userResponse.UserName, userResponse.Email);
+                return true;
+            }
+        }
+
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            throw new ServerUnavailableException();
         }
         
         finally

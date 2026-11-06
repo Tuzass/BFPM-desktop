@@ -73,7 +73,7 @@ public class Parser
             case TokenType.Register:
                 if (tokens[1].Type == TokenType.End)
                 {
-                    return new RegisterCommand();
+                    return new RegisterCommand(apiClient);
                 }
 
                 throw new UnexpectedTokenException();
