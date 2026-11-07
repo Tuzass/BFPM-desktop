@@ -33,7 +33,7 @@ public class ApiClient
     private async Task SaveTokenResponse(TokenResponse response)
     {
         var accessTokenExpiresAt = DateTimeOffset.UtcNow.AddSeconds(response.ExpiresIn);
-        var tokens = new AuthenticationTokens(response.AccessToken, response.RefreshToken, accessTokenExpiresAt);
+        var tokens = new AuthenticationTokens(response.RefreshToken, response.AccessToken, accessTokenExpiresAt);
         await _tokenStore.SaveTokens(tokens);
 
         if (_currentUserID.HasValue && _tokenStore.PersistentStorageAvailable)
@@ -338,6 +338,12 @@ public class ApiClient
         try
         {
             await _tokenStore.ClearTokens();
+            
+            if (_currentUserID is not null)
+            {   
+                await _tokenStore.ClearPersistedRefreshToken(_currentUserID.Value);
+            }
+
             _currentUserID = null;
             await UserService.SwitchCurrentUser(null);
         }
@@ -426,19 +432,19 @@ public class ApiClient
 
                 if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
                 {
-                    var body = await response.Content.ReadFromJsonAsync<RegisterConflictResponse>(cancellationToken: ct);
+                    var registerConflictResponse = await response.Content.ReadFromJsonAsync<RegisterConflictResponse>(cancellationToken: ct);
 
-                    if (body is null)
+                    if (registerConflictResponse is null)
                     {
-                        throw new InvalidOperationException("Register conflict not found in HTTP response body");
+                        throw new InvalidOperationException("Register conflict not found");
                     }
 
-                    if (body.Field == "username")
+                    if (registerConflictResponse.Field == "username")
                     {
                         throw new DuplicateUserNameException();
                     }
 
-                    if (body.Field == "email")
+                    if (registerConflictResponse.Field == "email")
                     {
                         throw new DuplicateEmailException();
                     }
@@ -457,15 +463,10 @@ public class ApiClient
                 {
                     return false;
                 }
-
+                
                 await UserService.StoreOrUpdate(userResponse.ID, userResponse.UserName, userResponse.Email);
                 return true;
             }
-        }
-
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            throw new ServerUnavailableException();
         }
         
         finally

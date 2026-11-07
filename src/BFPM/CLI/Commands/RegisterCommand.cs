@@ -40,6 +40,12 @@ public class RegisterCommand : ICommand
                 if (await _apiClient.Register(fieldContents[0], fieldContents[1], fieldContents[2]))
                 {
                     Console.WriteLine("New user registered successfully!");
+
+                    if (!await _apiClient.LoginWithCredentials(fieldContents[0], fieldContents[2]))
+                    {
+                        Console.WriteLine("Login as new user failed!");
+                    }
+
                     return;
                 }
 
