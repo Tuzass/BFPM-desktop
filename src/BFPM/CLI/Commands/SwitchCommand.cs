@@ -64,7 +64,7 @@ public class SwitchCommand : ICommand
                 List<string>? credentials = [user.Username, ""];
                 while (true)
                 {
-                    credentials = LoginPage.Run(credentials, "Please enter your password");
+                    credentials = LoginPage.Run(credentials, null);
 
                     if (credentials is null || credentials.Count < 2)
                     {

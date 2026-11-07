@@ -359,7 +359,18 @@ Left/Right | Move cursor within field");
                         fieldContents[fieldIndex] = fieldContents[fieldIndex].Remove(cursorIndex - minCursorHorizontalPosition - 1, 1);
                         cursorIndex--;
                         Console.SetCursorPosition(minCursorHorizontalPosition, 2 + fieldIndex);
-                        Console.Write(fieldContents[fieldIndex] + " ");
+                        
+                        if (fieldIndex == 2)
+                        {
+                            string hiddenPassword = new('*', fieldContents[fieldIndex].Length);
+                            Console.Write(hiddenPassword + " ");
+                        }
+
+                        else
+                        {
+                            Console.Write(fieldContents[fieldIndex] + " ");
+                        }
+
                         Console.SetCursorPosition(cursorIndex, 2 + fieldIndex);
                         continue;
                     }

@@ -181,12 +181,14 @@ Left/Right | Move cursor within field");
                 {
                     if (!Utils.ValidateUserName(fieldContents[0].Trim()))
                     {
+                        ClearErrorMessage();
                         PrintErrorMessage("Please make sure the username has 3-24 characters and contains only letters, numbers, (, ), -, and spaces!");
                         continue;
                     }
 
-                    if (!Utils.ValidatePassword(fieldContents[2].Trim()))
+                    if (!Utils.ValidatePassword(fieldContents[1].Trim()))
                     {
+                        ClearErrorMessage();
                         PrintErrorMessage("Please make sure the password has 8-24 characters and contains only letters, numbers, (, ), -, and spaces!");
                         continue;
                     }
@@ -220,6 +222,12 @@ Left/Right | Move cursor within field");
                                 ClearConfirmationOptions();
                                 PrintMainOptionIndicator(optionNames, optionIndex);
                                 PrintMainOptionList(optionNames);
+
+                                if (errorMessage is not null)
+                                {
+                                    PrintErrorMessage(errorMessage);
+                                }
+
                                 break;
                             }
 
@@ -344,7 +352,18 @@ Left/Right | Move cursor within field");
                         fieldContents[fieldIndex] = fieldContents[fieldIndex].Remove(cursorIndex - minCursorHorizontalPosition - 1, 1);
                         cursorIndex--;
                         Console.SetCursorPosition(minCursorHorizontalPosition, 2 + fieldIndex);
-                        Console.Write(fieldContents[fieldIndex] + " ");
+                        
+                        if (fieldIndex == 1)
+                        {
+                            string hiddenPassword = new('*', fieldContents[fieldIndex].Length);
+                            Console.Write(hiddenPassword + " ");
+                        }
+
+                        else
+                        {
+                            Console.Write(fieldContents[fieldIndex] + " ");
+                        }
+
                         Console.SetCursorPosition(cursorIndex, 2 + fieldIndex);
                         continue;
                     }
@@ -363,12 +382,12 @@ Left/Right | Move cursor within field");
                         if (fieldIndex == 1)
                         {
                             string hiddenPassword = new('*', fieldContents[fieldIndex].Length);
-                            Console.Write(hiddenPassword);
+                            Console.Write(hiddenPassword + " ");
                         }
 
                         else
                         {
-                            Console.Write(fieldContents[fieldIndex]);
+                            Console.Write(fieldContents[fieldIndex] + " ");
                         }
 
                         Console.SetCursorPosition(cursorIndex, 2 + fieldIndex);
