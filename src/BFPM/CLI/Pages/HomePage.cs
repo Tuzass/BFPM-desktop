@@ -14,8 +14,6 @@ Type 'help' to see the available commands";
 
     public static async Task Run(string[] args)
     {
-        var settings = SettingsService.GetSettings();
-
         HttpClient httpClient = new()
         {
             BaseAddress = new Uri("https://localhost:7035"),
@@ -24,6 +22,24 @@ Type 'help' to see the available commands";
 
         ApiClient apiClient = new(httpClient);
         Console.WriteLine(StartMessage);
+
+        var currentUser = await UserService.GetCurrentUser();
+        
+        if (currentUser.ID != 0)
+        {
+            await apiClient.LoginWithPersistentToken(currentUser.ID);   
+        }
+
+        try
+        {
+            currentUser = await UserService.GetCurrentUser();
+            Console.WriteLine($"Currently logged in as: {currentUser.Username}");
+        }
+
+        catch (NoCurrentUserException)
+        {
+            Console.WriteLine("No user is currently seleceted");
+        }
 
         while (true)
         {
@@ -46,7 +62,6 @@ Type 'help' to see the available commands";
                 }
 
                 await command.Execute();
-                settings = SettingsService.GetSettings();
                 continue;
             }
 
