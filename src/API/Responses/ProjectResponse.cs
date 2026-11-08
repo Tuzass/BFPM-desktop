@@ -1,5 +1,4 @@
 using Domain.Enums;
-using Infrastructure.Entities;
 
 namespace API.Responses;
 

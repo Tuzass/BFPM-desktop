@@ -13,6 +13,6 @@ public class TaskResponse
     public DateTime? DueDate {get; set;}
     public DateTime CreatedAt {get; set;}
     public DateTime? CompletedAt {get; set;}
-    public List<string> AssignedUsers {get; set;} = [];
+    public Dictionary<int, string> AssignedUsers {get; set;} = [];
     public int Version {get; set;}
 }

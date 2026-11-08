@@ -379,7 +379,7 @@ public class ApiClient
 
                 if (userResponse is null)
                 {
-                    throw new InvalidOperationException("User response not found in HTTP response");
+                    throw new InvalidOperationException("User not found in HTTP response");
                 }
 
                 return userResponse;
@@ -417,7 +417,7 @@ public class ApiClient
 
                 if (projectResponse is null)
                 {
-                    throw new InvalidOperationException("Project response not found in HTTP response");
+                    throw new InvalidOperationException("Project not found in HTTP response");
                 }
 
                 return projectResponse;
@@ -455,7 +455,7 @@ public class ApiClient
 
                 if (taskResponse is null)
                 {
-                    throw new InvalidOperationException("Task response not found in HTTP response");
+                    throw new InvalidOperationException("Task not found in HTTP response");
                 }
 
                 return taskResponse;
@@ -468,13 +468,36 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> GetTag(int tagID, CancellationToken ct = default)
+    public async Task<TagResponse> GetTag(int tagID, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
         try
         {
-            return await GetTagCore(tagID, ct);
+            using (var response = await GetTagCore(tagID, ct))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    throw new Services.Exceptions.UnauthorizedAccessException();
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError
+                 || response.StatusCode == System.Net.HttpStatusCode.BadGateway
+                 || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    throw new ServerUnavailableException();
+                }
+
+                var tagResponse = await response.Content.ReadFromJsonAsync<TagResponse>(cancellationToken: ct);
+
+                if (tagResponse is null)
+                {
+                    throw new InvalidOperationException("Tag not found in HTTP response");
+                }
+
+                return tagResponse;
+            }
         }
         
         finally

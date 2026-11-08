@@ -16,7 +16,13 @@ public static class DomainService
             .AnyAsync(f => f.ID == folderID && f.OwnerID == userID);
     }
 
-    public static async Task<bool> IsUserAssignedToProject(AppDbContext context, int userID, int projectID)
+    public static async Task<bool> IsProjectLocal(AppDbContext context, int projectID)
+    {
+        var project = await GetProjectByID(context, projectID);
+        return project.RemoteID is null;
+    }
+
+    public static async Task<bool> IsProjectAssignedToUser(AppDbContext context, int userID, int projectID)
     {
         return await context.Projects
             .AnyAsync(p => p.ID == projectID && p.AssignedUserID == userID);
@@ -32,12 +38,6 @@ public static class DomainService
     {
         return await context.Projects
             .AnyAsync(p => p.ID != projectID && p.OwnerID == ownerID && p.Name == projectName);
-    }
-
-    public static async Task<bool> IsProjectLocal(AppDbContext context, int projectID)
-    {
-        var project = await GetProjectByID(context, projectID);
-        return project.RemoteID is null;
     }
 
     public static async Task<bool> IsTaskDuplicate(AppDbContext context, int projectID, string taskName, int? taskID = null)
@@ -108,14 +108,14 @@ public static class DomainService
         return tag;
     }
 
-    public static async Task<List<KeyValuePair<string, ProjectRole>>> GetProjectMembers(ApiClient apiClient, int projectID)
+    public static async Task<Dictionary<string, ProjectRole>> GetProjectMembers(ApiClient apiClient, int projectID)
     {
         var projectResponse = await apiClient.GetProject(projectID);
-        List<KeyValuePair<string, ProjectRole>> assignedUsers = [];
+        Dictionary<string, ProjectRole> assignedUsers = [];
 
         foreach (var user in projectResponse.AssignedUsers)
         {
-            assignedUsers.Add(new(user.UserName, user.Role));
+            assignedUsers[user.UserName] = user.Role;
         }
 
         return assignedUsers;
@@ -124,10 +124,10 @@ public static class DomainService
     public static async Task<List<string>> GetUsersAssignedToTask(ApiClient apiClient, int taskID)
     {
         var taskResponse = await apiClient.GetTask(taskID);
-        return taskResponse.AssignedUsers;
+        return taskResponse.AssignedUsers.Values.ToList();
     }
 
-    public static async Task<List<Folder>> GetFoldersByProject(AppDbContext context, int projectID)
+    public static async Task<List<Folder>> GetFoldersContainingProject(AppDbContext context, int projectID)
     {
         return await context.FolderProjectLinks
             .Where(l => l.ProjectID == projectID)
@@ -146,14 +146,21 @@ public static class DomainService
             .ToListAsync();
     }
 
-    public static async Task<List<Folder>> GetFoldersByUser(AppDbContext context, int userID)
+    public static async Task<List<Folder>> GetFoldersOwnedByUser(AppDbContext context, int userID)
     {
         return await context.Folders
             .Where(f => f.OwnerID == userID)
             .ToListAsync();
     }
 
-    public static async Task<List<Project>> GetProjectsByFolder(AppDbContext context, int folderID)
+    public static async Task<List<Project>> GetProjectsAssignedToUser(AppDbContext context, int userID)
+    {
+        return await context.Projects
+            .Where(p => p.AssignedUserID == userID)
+            .ToListAsync();
+    }
+
+    public static async Task<List<Project>> GetProjectsAssignedToFolder(AppDbContext context, int folderID)
     {
         return await context.FolderProjectLinks
             .Where(l => l.FolderID == folderID)
@@ -165,14 +172,7 @@ public static class DomainService
             .ToListAsync();
     }
 
-    public static async Task<List<Project>> GetProjectsByUser(AppDbContext context, int userID)
-    {
-        return await context.Projects
-            .Where(p => p.AssignedUserID == userID)
-            .ToListAsync();
-    }
-
-    public static async Task<List<Project>> GetUserProjectsNotAssignedToFolder(AppDbContext context, int userID, int folderID)
+    public static async Task<List<Project>> GetProjectsNotAssignedToFolder(AppDbContext context, int userID, int folderID)
     {
         return await context.Projects
             .Where(p => p.AssignedUserID == userID)
@@ -221,11 +221,31 @@ public static class DomainService
             .ToListAsync();
     }
 
-    public static async Task<List<TaskItem>> GetTasksAssignedToUser(AppDbContext context, int projectID, int userID)
+    public static async Task<List<TaskItem>> GetTasksAssignedToUser(ApiClient apiClient, int projectID, int userID)
     {
-        // retrieves the tasks on a given project that are assigned to a given user
-        // TODO: implement after ApiClient is done
-        return [];
+        var projectResponse = await apiClient.GetProject(projectID);
+        List<TaskItem> assignedTasks = [];
+
+        foreach (var task in projectResponse.Tasks)
+        {
+            if (task.AssignedUsers.ContainsKey(userID))
+            {
+                assignedTasks.Add(new(
+                    task.ID,
+                    task.ProjectID,
+                    task.Name,
+                    task.Description,
+                    task.Status,
+                    task.Priority,
+                    task.DueDate,
+                    task.CreatedAt,
+                    task.CompletedAt,
+                    task.Version
+                ));
+            }
+        }
+        
+        return assignedTasks;
     }
 
     public static async Task<List<Tag>> GetTagsByProject(AppDbContext context, int projectID)
