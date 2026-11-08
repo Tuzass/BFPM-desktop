@@ -88,6 +88,9 @@ public class Parser
                 }
 
                 throw new UnexpectedTokenException();
+            
+            case TokenType.Upload:
+                return ParseUpload(apiClient, tokens[1..]);
         }
 
         return null;
@@ -495,6 +498,23 @@ public class Parser
             }
 
             return new RemoveTagFromTaskCommand(taskID, tagID);
+        }
+
+        throw new UnexpectedTokenException();
+    }
+
+    public static ICommand ParseUpload(ApiClient apiClient, List<Token> tokens)
+    {
+        if (tokens[0].Type == TokenType.Project
+         && tokens[1].Type == TokenType.Integer
+         && tokens[2].Type == TokenType.End)
+        {
+            if (tokens[1].Value is not int projectID)
+            {
+                throw new InvalidIdException();
+            }
+
+            return new UploadProjectCommand(apiClient, projectID);
         }
 
         throw new UnexpectedTokenException();

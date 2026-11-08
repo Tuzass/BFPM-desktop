@@ -16,6 +16,12 @@ public static class DomainService
             .AnyAsync(f => f.ID == folderID && f.OwnerID == userID);
     }
 
+    public static async Task<bool> IsProjectOwnedByUser(AppDbContext context, int userID, int projectID)
+    {
+        return await context.Projects
+            .AnyAsync(p => p.ID == projectID && p.OwnerID == userID);
+    }
+
     public static async Task<bool> IsProjectLocal(AppDbContext context, int projectID)
     {
         var project = await GetProjectByID(context, projectID);
@@ -272,6 +278,18 @@ public static class DomainService
         return await context.Tags
             .Where(t => t.ProjectID == projectID && t.Name.Contains(tagName))
             .ToListAsync();
+    }
+
+    public static async Task<List<TaskTagLink>> GetTaskTagLinksByProject(AppDbContext context, int projectID)
+    {
+        return await context.Tasks
+            .Where(t => t.ProjectID == projectID)
+            .Join(
+                context.TaskTagLinks,
+                t => t.ID,
+                ttl => ttl.TaskID,
+                (t, ttl) => ttl
+            ).ToListAsync();
     }
 
     public static async Task CreateFolder(AppDbContext context, int ownerID, string folderName, string folderDescription)

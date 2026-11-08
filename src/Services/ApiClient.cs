@@ -617,7 +617,7 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> UploadProject(string name, string description, ProjectStatus status, List<TaskItem> tasks, List<Tag> tags, List<TaskTagLink> taskTagLinks, CancellationToken ct = default)
+    public async Task UploadProject(string name, string description, ProjectStatus status, List<TaskItem> tasks, List<Tag> tags, List<TaskTagLink> taskTagLinks, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
@@ -642,7 +642,31 @@ public class ApiClient
             }
 
             UploadProjectRequest request = new(name, description, status, createTaskRequests, createTagRequests, createTaskTagLinkRequests);
-            return await UploadProjectCore(request, ct);
+
+            using (var response = await UploadProjectCore(request, ct))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    throw new Services.Exceptions.UnauthorizedAccessException();
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError
+                 || response.StatusCode == System.Net.HttpStatusCode.BadGateway
+                 || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    throw new ServerUnavailableException();
+                }
+
+                var projectResponse = await response.Content.ReadFromJsonAsync<ProjectResponse>(cancellationToken: ct);
+
+                if (projectResponse is null)
+                {
+                    throw new InvalidOperationException("Project not found in HTTP response");
+                }
+
+                // add new project from projectResponse to local DB
+            }
         }
         
         finally

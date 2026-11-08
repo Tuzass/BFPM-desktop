@@ -112,6 +112,10 @@ public class Lexer
                     tokens.Add(new(TokenType.Task));
                     break;
                 
+                case "upload":
+                    tokens.Add(new(TokenType.Upload));
+                    break;
+                
                 case "user":
                     tokens.Add(new(TokenType.User));
                     break;
