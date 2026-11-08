@@ -31,8 +31,8 @@ public class RemoveTagFromTaskCommand : ICommand
             var task = await DomainService.GetTaskByID(context, TaskID);
             var tag = await DomainService.GetTagByID(context, TagID);
 
-            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, task.ProjectID)
-            || !await DomainService.IsUserAssignedToProject(context, currentUser.ID, tag.ProjectID))
+            if (!await DomainService.IsProjectAssignedToUser(context, currentUser.ID, task.ProjectID)
+            || !await DomainService.IsProjectAssignedToUser(context, currentUser.ID, tag.ProjectID))
             {
                 throw new UnauthorizedAccessException();
             }

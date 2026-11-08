@@ -18,7 +18,7 @@ public class ListProjectsCommand : ICommand
 
         using (var context = AppDbContextFactory.CreateContext())
         {
-            var projects = await DomainService.GetProjectsByUser(context, currentUser.ID);
+            var projects = await DomainService.GetProjectsAssignedToUser(context, currentUser.ID);
 
             if (projects.Count == 0)
             {

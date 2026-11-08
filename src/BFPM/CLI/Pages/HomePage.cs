@@ -22,23 +22,42 @@ Type 'help' to see the available commands";
 
         ApiClient apiClient = new(httpClient);
         Console.WriteLine(StartMessage);
-
-        var currentUser = await UserService.GetCurrentUser();
-        
-        if (currentUser.ID != 0)
-        {
-            await apiClient.LoginWithPersistentToken(currentUser.ID);   
-        }
+        int? currentUserID = null;
 
         try
         {
-            currentUser = await UserService.GetCurrentUser();
+            var currentUser = await UserService.GetCurrentUser();
+
+            if (currentUser.ID != 0)
+            {
+                currentUserID = currentUser.ID;
+                
+                if (!await apiClient.LoginWithPersistentToken(currentUser.ID))
+                {
+                    Console.WriteLine("Login failed.");
+                }
+
+                currentUser = await UserService.GetCurrentUser();
+            }
+
             Console.WriteLine($"Currently logged in as: {currentUser.Username}");
         }
 
-        catch (NoCurrentUserException)
+        catch (Exception e)
         {
-            Console.WriteLine("No user is currently seleceted");
+            switch (e)
+            {
+                case NoCurrentUserException:
+                    Console.WriteLine("No user is currently selected.");
+                    break;
+                
+                case ServerUnavailableException:
+                    await apiClient.SetCurrentUserID(currentUserID!.Value);
+                    var currentUser = await UserService.GetCurrentUser();
+                    Console.WriteLine($"Currently logged in as: {currentUser.Username}");
+                    Console.WriteLine("The server is currently unavailable.");
+                    break;
+            }
         }
 
         while (true)

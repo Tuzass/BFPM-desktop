@@ -24,10 +24,22 @@ public class SwitchCommand : ICommand
 
     public async Task Execute()
     {
-        var users = await UserService.GetStoredRegisteredUsers();
+        var users = await UserService.GetStoredUsers();
         var localUser = await UserService.GetLocalUser();
         users.Insert(0, localUser);
         string? errorMessage = null;
+
+        try
+        {
+            var currentUser = await UserService.GetCurrentUser();
+            currentUser = users.Single(u => u.ID == currentUser.ID);
+            users.Remove(currentUser);
+        }
+
+        catch (NoCurrentUserException)
+        {
+            
+        }
 
         while (true)
         {

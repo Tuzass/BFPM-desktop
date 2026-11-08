@@ -27,10 +27,10 @@ public class AssignProjectToFolderCommand : ICommand
 
         using (var context = AppDbContextFactory.CreateContext())
         {
-            var folders = await DomainService.GetFoldersByUser(context, currentUser.ID);
+            var folders = await DomainService.GetFoldersOwnedByUser(context, currentUser.ID);
             var folder = folders.SingleOrDefault(f => f.ID == FolderID);
 
-            var projects = await DomainService.GetProjectsByUser(context, currentUser.ID);
+            var projects = await DomainService.GetProjectsAssignedToUser(context, currentUser.ID);
             var project = projects.SingleOrDefault(p => p.ID == ProjectID);
 
             await DomainService.AssignProjectToFolder(context, FolderID, ProjectID);

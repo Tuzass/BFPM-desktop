@@ -28,7 +28,7 @@ public class DeleteTaskCommand : ICommand
         {
             var task = await DomainService.GetTaskByID(context, TaskID);
 
-            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, task.ProjectID))
+            if (!await DomainService.IsProjectAssignedToUser(context, currentUser.ID, task.ProjectID))
             {
                 throw new UnauthorizedAccessException();
             }

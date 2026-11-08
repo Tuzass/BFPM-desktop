@@ -26,7 +26,7 @@ public class DeleteProjectCommand : ICommand
 
         using (var context = AppDbContextFactory.CreateContext())
         {
-            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, ProjectID))
+            if (!await DomainService.IsProjectAssignedToUser(context, currentUser.ID, ProjectID))
             {
                 throw new UnauthorizedAccessException();
             }

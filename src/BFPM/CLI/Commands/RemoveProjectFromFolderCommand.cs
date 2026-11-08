@@ -32,7 +32,7 @@ public class RemoveProjectFromFolderCommand : ICommand
                 throw new UnauthorizedAccessException();
             }
 
-            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, ProjectID))
+            if (!await DomainService.IsProjectAssignedToUser(context, currentUser.ID, ProjectID))
             {
                 throw new UnauthorizedAccessException();
             }

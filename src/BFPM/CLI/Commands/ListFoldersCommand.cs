@@ -18,7 +18,7 @@ public class ListFoldersCommand : ICommand
 
         using (var context = AppDbContextFactory.CreateContext())
         {
-            var folders = await DomainService.GetFoldersByUser(context, currentUser.ID);
+            var folders = await DomainService.GetFoldersOwnedByUser(context, currentUser.ID);
 
             if (folders.Count == 0)
             {

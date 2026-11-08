@@ -27,7 +27,7 @@ public class PrintTagCommand : ICommand
         {
             var tag = await DomainService.GetTagByID(context, TagID);
 
-            if (!await DomainService.IsUserAssignedToProject(context, currentUser.ID, tag.ProjectID))
+            if (!await DomainService.IsProjectAssignedToUser(context, currentUser.ID, tag.ProjectID))
             {
                 throw new UnauthorizedAccessException();
             }

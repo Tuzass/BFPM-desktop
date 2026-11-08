@@ -31,7 +31,7 @@ public class PrintFolderCommand : ICommand
             }
 
             var folder = await DomainService.GetFolderByID(context, FolderID);
-            var projects = await DomainService.GetProjectsByFolder(context, FolderID);
+            var projects = await DomainService.GetProjectsAssignedToFolder(context, FolderID);
             Console.WriteLine(Utils.FolderToString(folder));
             Console.WriteLine($"Projects: {Utils.ProjectListToString(projects)}");
         }

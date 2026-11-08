@@ -114,7 +114,7 @@ static public class UserService
         }
     }
 
-    public static async Task<List<User>> GetStoredRegisteredUsers()
+    public static async Task<List<User>> GetStoredUsers()
     {
         using (var context = AppDbContextFactory.CreateContext())
         {

@@ -109,7 +109,11 @@ public class ApiClient
 
         if (accessToken is null)
         {
-            throw new InvalidOperationException("User is not authenticated");
+            if (_currentUserID is null
+             || !await LoginWithPersistentToken(_currentUserID.Value, ct))
+            {
+                throw new InvalidOperationException("User is not authenticated");
+            }
         }
 
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
@@ -179,6 +183,12 @@ public class ApiClient
         {
             return await SendAuthenticated(httpRequest, ct);
         }
+    }
+
+    public async Task SetCurrentUserID(int userID, CancellationToken ct = default)
+    {
+        _currentUserID = userID;
+        await UserService.SwitchCurrentUser(_currentUserID);
     }
 
     public async Task<bool> LoginWithCredentials(string username, string password, CancellationToken ct = default)
@@ -266,10 +276,7 @@ public class ApiClient
 
         try
         {
-            _currentUserID = userID;
-            await UserService.SwitchCurrentUser(userID);
-
-            if (!await _tokenStore.LoadPersistedRefreshToken(_currentUserID.Value))
+            if (!await _tokenStore.LoadPersistedRefreshToken(userID))
             {
                 await _tokenStore.ClearTokens();
                 _currentUserID = null;
@@ -312,17 +319,28 @@ public class ApiClient
                     return false;
                 }
 
+                _currentUserID = userID;
+                await UserService.SwitchCurrentUser(userID);
                 await UserService.UpdateInformation(userResponse.ID, userResponse.UserName, userResponse.Email);
                 return true;
             }
         }
 
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
+            await _tokenStore.ClearTokens();
             _currentUserID = null;
             await UserService.SwitchCurrentUser(null);
-            await _tokenStore.ClearTokens();
-            throw new ServerUnavailableException();
+
+            switch (e)
+            {
+                case ServerUnavailableException:
+                case HttpRequestException:
+                    throw new ServerUnavailableException();
+                
+                default:
+                    throw new InvalidOperationException("An unexpected error occurred during login.");
+            }
         }
 
         finally
