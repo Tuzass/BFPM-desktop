@@ -469,6 +469,9 @@ public static class DomainService
                         case DomainEntityStatus.Completed:
                             project.Complete();
                             break;
+                        
+                        default:
+                            throw new UnexpectedProjectStatusException();
                     }
                 }
 
@@ -523,29 +526,22 @@ public static class DomainService
                         case DomainEntityStatus.Completed:
                             task.Complete();
                             break;
+                        
+                        default:
+                            throw new UnexpectedTaskStatusException();
                     }
                 }
 
                 if (localChange.Priority is not null)
                 {
-                    switch (localChange.Priority)
+                    task.Priority = localChange.Priority switch
                     {
-                        case TaskItemPriority.Low:
-                            task.Priority = TaskItemPriority.Low;
-                            break;
-
-                        case TaskItemPriority.Medium:
-                            task.Priority = TaskItemPriority.Medium;
-                            break;
-                        
-                        case TaskItemPriority.High:
-                            task.Priority = TaskItemPriority.High;
-                            break;
-                        
-                        case TaskItemPriority.Urgent:
-                            task.Priority = TaskItemPriority.Urgent;
-                            break;
-                    }
+                        TaskItemPriority.Low => TaskItemPriority.Low,
+                        TaskItemPriority.Medium => TaskItemPriority.Medium,
+                        TaskItemPriority.High => TaskItemPriority.High,
+                        TaskItemPriority.Urgent => TaskItemPriority.Urgent,
+                        _ => throw new UnexpectedTaskPriorityException(),
+                    };
                 }
 
                 if (localChange.DueDateChanged)
