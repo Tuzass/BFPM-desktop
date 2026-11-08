@@ -354,13 +354,36 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> GetCurrentUser(CancellationToken ct = default)
+    public async Task<UserResponse> GetCurrentUser(CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
         try
         {
-            return await GetCurrentUserCore(ct);
+            using (var response = await GetCurrentUserCore(ct))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    throw new Services.Exceptions.UnauthorizedAccessException();
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError
+                 || response.StatusCode == System.Net.HttpStatusCode.BadGateway
+                 || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    throw new ServerUnavailableException();
+                }
+
+                var userResponse = await response.Content.ReadFromJsonAsync<UserResponse>(cancellationToken: ct);
+
+                if (userResponse is null)
+                {
+                    throw new InvalidOperationException("User response not found in HTTP response");
+                }
+
+                return userResponse;
+            }
         }
         
         finally
@@ -369,13 +392,36 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> GetProject(int projectID, CancellationToken ct = default)
+    public async Task<ProjectResponse> GetProject(int projectID, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
         try
         {
-            return await GetProjectCore(projectID, ct);
+            using (var response = await GetProjectCore(projectID, ct))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    throw new Services.Exceptions.UnauthorizedAccessException();
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError
+                 || response.StatusCode == System.Net.HttpStatusCode.BadGateway
+                 || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    throw new ServerUnavailableException();
+                }
+
+                var projectResponse = await response.Content.ReadFromJsonAsync<ProjectResponse>(cancellationToken: ct);
+
+                if (projectResponse is null)
+                {
+                    throw new InvalidOperationException("Project response not found in HTTP response");
+                }
+
+                return projectResponse;
+            }
         }
         
         finally
@@ -384,13 +430,36 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> GetTask(int taskID, CancellationToken ct = default)
+    public async Task<TaskResponse> GetTask(int taskID, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
         try
         {
-            return await GetTaskCore(taskID, ct);
+            using (var response = await GetTaskCore(taskID, ct))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    throw new Services.Exceptions.UnauthorizedAccessException();
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError
+                 || response.StatusCode == System.Net.HttpStatusCode.BadGateway
+                 || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    throw new ServerUnavailableException();
+                }
+
+                var taskResponse = await response.Content.ReadFromJsonAsync<TaskResponse>(cancellationToken: ct);
+
+                if (taskResponse is null)
+                {
+                    throw new InvalidOperationException("Task response not found in HTTP response");
+                }
+
+                return taskResponse;
+            }
         }
         
         finally
@@ -436,7 +505,7 @@ public class ApiClient
 
                     if (registerConflictResponse is null)
                     {
-                        throw new InvalidOperationException("Register conflict not found");
+                        throw new InvalidOperationException("Register conflict not found in HTTP response");
                     }
 
                     if (registerConflictResponse.Field == "username")

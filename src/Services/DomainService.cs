@@ -108,18 +108,23 @@ public static class DomainService
         return tag;
     }
 
-    public static async Task<List<User>> GetProjectMembers(AppDbContext context, int projectID)
+    public static async Task<List<KeyValuePair<string, ProjectRole>>> GetProjectMembers(ApiClient apiClient, int projectID)
     {
-        // retrieves a list of all users assigned to a given project, regardless of roles
-        // TODO: implement after ApiClient is done
-        return [];
+        var projectResponse = await apiClient.GetProject(projectID);
+        List<KeyValuePair<string, ProjectRole>> assignedUsers = [];
+
+        foreach (var user in projectResponse.AssignedUsers)
+        {
+            assignedUsers.Add(new(user.UserName, user.Role));
+        }
+
+        return assignedUsers;
     }
 
-    public static async Task<List<User>> GetUsersAssignedToTask(AppDbContext context, int taskID)
+    public static async Task<List<string>> GetUsersAssignedToTask(ApiClient apiClient, int taskID)
     {
-        // retrieves a list of all users assigned to a given task
-        // TODO: implement after ApiClient is done
-        return [];
+        var taskResponse = await apiClient.GetTask(taskID);
+        return taskResponse.AssignedUsers;
     }
 
     public static async Task<List<Folder>> GetFoldersByProject(AppDbContext context, int projectID)
