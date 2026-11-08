@@ -245,7 +245,7 @@ If you wish to log in as an unregistered user, do 'login' (this requires a netwo
                         currentUser = await UserService.GetCurrentUser();
                     }
 
-                    catch (UserNotRegisteredLocally)
+                    catch (UserNotRegisteredLocallyException)
                     {
                         Console.WriteLine("Error: user is not registered locally!\n");
                         continue;
@@ -285,7 +285,7 @@ If you wish to log in as an unregistered user, do 'login' (this requires a netwo
                         }
                     }
 
-                    catch (UserNotRegisteredLocally)
+                    catch (UserNotRegisteredLocallyException)
                     {
                         Console.WriteLine("Error: user is not registered locally!\n");
                         continue;

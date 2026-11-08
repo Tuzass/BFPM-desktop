@@ -57,7 +57,7 @@ static public class UserService
             
             if (user is null)
             {
-                throw new UserNotRegisteredLocally();
+                throw new UserNotRegisteredLocallyException();
             }
             
             user.Username = username;
@@ -137,7 +137,7 @@ static public class UserService
 
             if (user is null)
             {
-                throw new UserNotRegisteredLocally();
+                throw new UserNotRegisteredLocallyException();
             }
 
             context.Users.Remove(user);
@@ -157,7 +157,7 @@ static public class UserService
                 
                 if (newCurrentUser is null)
                 {
-                    throw new UserNotRegisteredLocally();
+                    throw new UserNotRegisteredLocallyException();
                 }
             }
 

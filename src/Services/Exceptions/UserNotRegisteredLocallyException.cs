@@ -1,8 +1,8 @@
 namespace Services.Exceptions;
 
-public class UserNotRegisteredLocally : Exception
+public class UserNotRegisteredLocallyException : Exception
 {
-    public UserNotRegisteredLocally()
+    public UserNotRegisteredLocallyException()
         : base("Selected user is not registered locally.")
     {
     }
