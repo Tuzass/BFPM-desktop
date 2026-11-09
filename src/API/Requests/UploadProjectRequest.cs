@@ -9,7 +9,6 @@ public class UploadProjectRequest
     [StringLength(50, MinimumLength = 3)]
     public string Name {get; set;} = string.Empty;
 
-    [Required]
     [StringLength(2000)]
     public string Description {get; set;} = string.Empty;
 

@@ -163,7 +163,7 @@ Left/Right | Moves cursor within field");
         List<string> fieldNames = ["Name", "Description", "Status"];
         List<string> fieldContents = [project.Name, project.Description, statusString];
         List<string> statusOptions = ["1", "2", "3", "4"];
-        int fieldCount = 3;
+        int fieldCount = fieldNames.Count;
         int fieldIndex;
 
         int longestFieldLength = 0;
@@ -183,8 +183,14 @@ Left/Right | Moves cursor within field");
         PrintTitle(projectID);
         PrintFields(fieldNames, fieldContents, longestFieldLength);
 
-        List<string> optionNames = ["Edit fields", "Save", "Cancel"];
-        int optionCount = 3;
+        List<string> optionNames = ["Edit fields", "Save", "Copy", "Cancel"];
+
+        if (project.RemoteID is null)
+        {
+            optionNames.Insert(3, "Upload");
+        }
+
+        int optionCount = optionNames.Count;
         int optionIndex = 0;
 
         while (true)
@@ -207,7 +213,7 @@ Left/Right | Moves cursor within field");
                         continue;
                     }
 
-                    if (await DomainService.IsProjectDuplicate(context, currentUser.ID, fieldContents[0].Trim()))
+                    if (await DomainService.IsProjectDuplicate(context, currentUser.ID, fieldContents[0].Trim(), project.ID))
                     {
                         PrintErrorMessage($"Current user already has a project named '{fieldContents[0].Trim()}' (case-insensitive)!");
                         continue;

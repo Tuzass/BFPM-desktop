@@ -1,11 +1,10 @@
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Infrastructure.Database;
 using Services;
-using Services.Exceptions;
 using BFPM.CLI.Exceptions;
-using API.Requests;
 using System;
+using Infrastructure.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace BFPM.CLI.Commands;
 
@@ -40,16 +39,37 @@ public class UploadProjectCommand : ICommand
             {
                 throw new NonlocalChangeException();
             }
-
+            
             var project = await DomainService.GetProjectByID(context, ProjectID);
             var tasks = await DomainService.GetTasksByProject(context, ProjectID);
             var tags = await DomainService.GetTagsByProject(context, ProjectID);
             var taskTagLinks = await DomainService.GetTaskTagLinksByProject(context, ProjectID);
-                                        
-            await _apiClient.UploadProject(project.Name, project.Description, project.Status, tasks, tags, taskTagLinks);
-            Console.WriteLine($"Project {project.Name} (ID: {ProjectID}) successfully uploaded!");
+            
+            string originalName = project.Name;
+            int remoteID = await _apiClient.UploadProject(project.Name, project.Description, project.Status, tasks, tags, taskTagLinks);
 
-            // prompt the user about keeping the local copy that was uploaded or not
+            try
+            {
+                int remoteCopyID = await DomainService.CopyProject(context, currentUser.ID, ProjectID, remoteID);
+
+                Change change = new(Infrastructure.Enums.DomainEntityType.Project, remoteCopyID, " ", null, null, null, null, false);
+                await DomainService.ApplyChange(context, change);
+
+                change = new(Infrastructure.Enums.DomainEntityType.Project, ProjectID, originalName + " - Local copy", null, null, null, null, false);
+                await DomainService.ApplyChange(context, change);
+
+                change = new(Infrastructure.Enums.DomainEntityType.Project, remoteCopyID, originalName, null, null, null, null, false);
+                await DomainService.ApplyChange(context, change);
+
+                Console.WriteLine($"Project {originalName} (ID: {ProjectID}) successfully uploaded!");
+                Console.WriteLine($"Project with ID {remoteCopyID} is now associated to the remote copy!");
+            }
+
+            catch (DbUpdateException e)
+            {
+                Console.WriteLine(e.InnerException?.Message);
+                throw;
+            }
         }
     }
 }

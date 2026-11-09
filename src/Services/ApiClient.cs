@@ -617,7 +617,7 @@ public class ApiClient
         }
     }
 
-    public async Task UploadProject(string name, string description, ProjectStatus status, List<TaskItem> tasks, List<Tag> tags, List<TaskTagLink> taskTagLinks, CancellationToken ct = default)
+    public async Task<int> UploadProject(string name, string description, ProjectStatus status, List<TaskItem> tasks, List<Tag> tags, List<TaskTagLink> taskTagLinks, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
@@ -636,9 +636,24 @@ public class ApiClient
             }
 
             List<CreateTaskTagLinkRequest> createTaskTagLinkRequests = [];
-            foreach (var taskTagLink in taskTagLinks)
+            for (int i = 0; i < tasks.Count; i++)
             {
-                createTaskTagLinkRequests.Add(new(taskTagLink.TaskID, taskTagLink.TagID));
+                var task = tasks[i];
+                var taskTags = taskTagLinks
+                    .Where(ttl => ttl.TaskID == task.ID)
+                    .Join(
+                        tags,
+                        ttl => ttl.TagID,
+                        t => t.ID,
+                        (ttl, t) => t)
+                    .ToList();
+                
+                foreach (var tag in taskTags)
+                {
+                    int index = tags.IndexOf(tag);
+                    createTaskTagLinkRequests.Add(new(i, index));
+                    Console.WriteLine($"({i}, {index})");
+                }
             }
 
             UploadProjectRequest request = new(name, description, status, createTaskRequests, createTagRequests, createTaskTagLinkRequests);
@@ -648,6 +663,8 @@ public class ApiClient
                 if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
                  || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
+                    string error = await response.Content.ReadAsStringAsync(ct);
+                    Console.WriteLine(error);
                     throw new Services.Exceptions.UnauthorizedAccessException();
                 }
 
@@ -658,14 +675,29 @@ public class ApiClient
                     throw new ServerUnavailableException();
                 }
 
-                var projectResponse = await response.Content.ReadFromJsonAsync<ProjectResponse>(cancellationToken: ct);
-
-                if (projectResponse is null)
+                if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
                 {
-                    throw new InvalidOperationException("Project not found in HTTP response");
+                    var registerConflictResponse = await response.Content.ReadFromJsonAsync<RegisterConflictResponse>(cancellationToken: ct);
+
+                    if (registerConflictResponse is null)
+                    {
+                        throw new InvalidOperationException("Register conflict not found in HTTP response");
+                    }
+
+                    if (registerConflictResponse.Field == "project")
+                    {
+                        throw new DuplicateProjectException();
+                    }
                 }
 
-                // add new project from projectResponse to local DB
+                var result = await response.Content.ReadFromJsonAsync<UploadProjectResponse>(cancellationToken: ct);
+
+                if (result is null)
+                {
+                    throw new InvalidOperationException("Project ID not found in HTTP response");
+                }
+
+                return result.ID;
             }
         }
         

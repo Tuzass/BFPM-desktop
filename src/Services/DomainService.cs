@@ -400,31 +400,31 @@ public static class DomainService
         context.TaskTagLinks.Remove(link);
     }
 
-    public static async Task ApplyChange(AppDbContext context, Change localChange)
+    public static async Task ApplyChange(AppDbContext context, Change change)
     {
-        switch (localChange.TargetType)
+        switch (change.TargetType)
         {
             case DomainEntityType.Folder:
                 var folder = await context.Folders
-                    .SingleOrDefaultAsync(f => f.ID == localChange.TargetID);
+                    .SingleOrDefaultAsync(f => f.ID == change.TargetID);
                 
                 if (folder is null)
                 {
                     throw new InexistentFolderException();
                 }
 
-                if (localChange.Name is not null)
+                if (change.Name is not null)
                 {
-                    folder.Name = localChange.Name;
+                    folder.Name = change.Name;
                 }
 
-                if (localChange.Description is not null)
+                if (change.Description is not null)
                 {
-                    folder.Description = localChange.Description;
+                    folder.Description = change.Description;
                 }
 
-                if (localChange.Name is not null
-                    || localChange.Description is not null)
+                if (change.Name is not null
+                    || change.Description is not null)
                 {
                     folder.IncreaseVersion();                        
                 }
@@ -433,26 +433,26 @@ public static class DomainService
             
             case DomainEntityType.Project:
                 var project = await context.Projects
-                    .SingleOrDefaultAsync(f => f.ID == localChange.TargetID);
+                    .SingleOrDefaultAsync(f => f.ID == change.TargetID);
                 
                 if (project is null)
                 {
                     throw new InexistentProjectException();
                 }
 
-                if (localChange.Name is not null)
+                if (change.Name is not null)
                 {
-                    project.Name = localChange.Name;
+                    project.Name = change.Name;
                 }
 
-                if (localChange.Description is not null)
+                if (change.Description is not null)
                 {
-                    project.Description = localChange.Description;
+                    project.Description = change.Description;
                 }
 
-                if (localChange.Status is not null)
+                if (change.Status is not null)
                 {
-                    switch (localChange.Status)
+                    switch (change.Status)
                     {
                         case DomainEntityStatus.Active:
                             project.ChangeStatus(ProjectStatus.Active);
@@ -475,9 +475,9 @@ public static class DomainService
                     }
                 }
 
-                if (localChange.Name is not null
-                    || localChange.Description is not null
-                    || localChange.Status is not null)
+                if (change.Name is not null
+                    || change.Description is not null
+                    || change.Status is not null)
                 {
                     project.IncreaseVersion();                        
                 }
@@ -486,26 +486,26 @@ public static class DomainService
             
             case DomainEntityType.Task:
                 var task = await context.Tasks
-                    .SingleOrDefaultAsync(f => f.ID == localChange.TargetID);
+                    .SingleOrDefaultAsync(f => f.ID == change.TargetID);
                 
                 if (task is null)
                 {
                     throw new InexistentTaskException();
                 }
 
-                if (localChange.Name is not null)
+                if (change.Name is not null)
                 {
-                    task.Name = localChange.Name;
+                    task.Name = change.Name;
                 }
 
-                if (localChange.Description is not null)
+                if (change.Description is not null)
                 {
-                    task.Description = localChange.Description;
+                    task.Description = change.Description;
                 }
 
-                if (localChange.Status is not null)
+                if (change.Status is not null)
                 {
-                    switch (localChange.Status)
+                    switch (change.Status)
                     {
                         case DomainEntityStatus.InProgress:
                             task.ChangeStatus(TaskItemStatus.InProgress);
@@ -532,9 +532,9 @@ public static class DomainService
                     }
                 }
 
-                if (localChange.Priority is not null)
+                if (change.Priority is not null)
                 {
-                    task.Priority = localChange.Priority switch
+                    task.Priority = change.Priority switch
                     {
                         TaskItemPriority.Low => TaskItemPriority.Low,
                         TaskItemPriority.Medium => TaskItemPriority.Medium,
@@ -544,16 +544,16 @@ public static class DomainService
                     };
                 }
 
-                if (localChange.DueDateChanged)
+                if (change.DueDateChanged)
                 {
-                    task.ChangeDueDate(localChange.DueDate);
+                    task.ChangeDueDate(change.DueDate);
                 }
 
-                if (localChange.Name is not null
-                    || localChange.Description is not null
-                    || localChange.Status is not null
-                    || localChange.Priority is not null
-                    || localChange.DueDateChanged)
+                if (change.Name is not null
+                    || change.Description is not null
+                    || change.Status is not null
+                    || change.Priority is not null
+                    || change.DueDateChanged)
                 {
                     task.IncreaseVersion();                        
                 }
@@ -562,16 +562,16 @@ public static class DomainService
             
             case DomainEntityType.Tag:
                 var tag = await context.Tags
-                    .SingleOrDefaultAsync(f => f.ID == localChange.TargetID);
+                    .SingleOrDefaultAsync(f => f.ID == change.TargetID);
                 
                 if (tag is null)
                 {
                     throw new InexistentTagException();
                 }
 
-                if (localChange.Name is not null)
+                if (change.Name is not null)
                 {
-                    tag.Name = localChange.Name;
+                    tag.Name = change.Name;
                     tag.IncreaseVersion();                        
                 }
 
@@ -647,7 +647,7 @@ public static class DomainService
         context.Tags.Remove(tag);
     }
 
-    public static async Task CopyProject(AppDbContext context, int newOwnerID, int projectID, int? remoteID = null)
+    public static async Task<int> CopyProject(AppDbContext context, int newOwnerID, int projectID, int? remoteID = null)
     {
         var project = await GetProjectByID(context, projectID);
 
@@ -719,5 +719,6 @@ public static class DomainService
 
         context.TaskTagLinks.AddRange(newLinks);
         await context.SaveChangesAsync();
+        return newProject.ID!.Value;
     }
 }
