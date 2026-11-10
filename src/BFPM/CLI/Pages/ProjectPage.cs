@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using BFPM.CLI.Exceptions;
 using Domain.Enums;
 using Infrastructure.Database;
 using Infrastructure.Entities;
 using Infrastructure.Enums;
 using Services;
-using Services.Exceptions;
 
 namespace BFPM.CLI.Pages;
 
@@ -46,14 +44,12 @@ public class ProjectEditPage
         }
     }
 
-    private static void ClearFields(List<string> fieldNames, List<string> fieldContents, int longestFieldLength)
+    private static void ClearFields(List<string> fieldNames)
     {
-        int minCursorHorizontalPosition = longestFieldLength + 2;
-
         for (int i = 0; i < fieldNames.Count; i++)
         {
             Console.SetCursorPosition(0, 3 + i);
-            Console.Write(new string(' ', minCursorHorizontalPosition + fieldContents[i].Length));
+            Console.Write(new string(' ', 200));
         }
     }
 
@@ -93,31 +89,29 @@ public class ProjectEditPage
         Console.Write(message);
     }
 
+    private static void ClearConfirmationMessage()
+    {
+        Console.SetCursorPosition(0, 7);
+        Console.Write(new string(' ', 200));
+    }
+
     private static void PrintConfirmationOptions(string option1, string option2, int optionIndex)
     {
         Console.SetCursorPosition(0, 9);
-        int indicatorIndex;
+        int indicatorIndex = option1.Length / 2;
 
-        if (optionIndex == 0)
+        if (optionIndex == 1)
         {
-            indicatorIndex = option1.Length / 2;
+            indicatorIndex = option1.Length + option2.Length / 2 + 3;
         }
 
-        else
-        {
-            indicatorIndex = option1.Length + option2.Length / 2 + 2;
-        }
-
-        Console.Write(new string(' ', indicatorIndex) + "V");
+        Console.Write(new string(' ', indicatorIndex) + "V" + new string(' ', 50));
         Console.SetCursorPosition(0, 10);
         Console.Write($"{option1} | {option2}");
     }
 
     private static void ClearConfirmationOptions()
     {
-        Console.SetCursorPosition(0, 7);
-        Console.Write(new string(' ', 200));
-
         Console.SetCursorPosition(0, 9);
         Console.Write(new string(' ', 200));
 
@@ -129,55 +123,63 @@ public class ProjectEditPage
     {
         Console.SetCursorPosition(0, 7);
         Console.Write(@"Status options: 1 (Active), 2 (On Hold), 3 (Archived), 4 (Completed)
-ESC/Enter | Finishes editing
-Up | Moves to the field above
-Down/Tab | Moves to the field below
-Left/Right | Moves cursor within field");
+Enter      | Exit & Save
+ESC        | Exit without saving
+Up         | Move to the field above
+Down/Tab   | Move to the field below
+Left/Right | Move cursor within field");
     }
 
     private static void ClearEditingKeyInstructions()
     {
         Console.SetCursorPosition(0, 7);
-        Console.Write(new string(' ', 68));
+        Console.Write(new string(' ', 100));
 
         Console.SetCursorPosition(0, 8);
-        Console.Write(new string(' ', 28));
+        Console.Write(new string(' ', 100));
 
         Console.SetCursorPosition(0, 9);
-        Console.Write(new string(' ', 24));
+        Console.Write(new string(' ', 100));
 
         Console.SetCursorPosition(0, 10);
-        Console.Write(new string(' ', 34));
+        Console.Write(new string(' ', 100));
 
         Console.SetCursorPosition(0, 11);
-        Console.Write(new string(' ', 38));
+        Console.Write(new string(' ', 100));
+
+        Console.SetCursorPosition(0, 12);
+        Console.Write(new string(' ', 100));
     }
 
     private static void PrintCopyKeyInstructions()
     {
         Console.SetCursorPosition(0, 7);
-        Console.Write(@"ESC/Enter | Finishes editing
+        Console.Write(@"Enter      | Exit & Create copy
+ESC        | Exit without creating copy
 Left/Right | Moves cursor");
     }
 
     private static void ClearCopyKeyInstructions()
     {
         Console.SetCursorPosition(0, 7);
-        Console.Write(new string(' ', 28));
+        Console.Write(new string(' ', 100));
 
         Console.SetCursorPosition(0, 8);
-        Console.Write(new string(' ', 38));
+        Console.Write(new string(' ', 100));
+
+        Console.SetCursorPosition(0, 9);
+        Console.Write(new string(' ', 100));
     }
 
     private static void PrintErrorMessage(string message)
     {
-        Console.SetCursorPosition(0, 12);
+        Console.SetCursorPosition(0, 14);
         Console.Write(message);
     }
 
     private static void ClearErrorMessage()
     {
-        Console.SetCursorPosition(0, 12);
+        Console.SetCursorPosition(0, 14);
         Console.Write(new string(' ', 200));
     }
 
@@ -222,7 +224,7 @@ Left/Right | Moves cursor");
 
         List<string> optionNames = ["Edit fields", "Create copy", "Exit"];
 
-        if (project.RemoteID is null)
+        if (isProjectLocal)
         {
             optionNames.Insert(2, "Upload");
         }
@@ -245,19 +247,23 @@ Left/Right | Moves cursor");
 
                 if (optionIndex == 0)
                 {
+                    List<string> oldFieldContents = [fieldContents[0], fieldContents[1], fieldContents[2]];
                     fieldIndex = 0;
                     cursorIndex = minCursorHorizontalPosition + fieldContents[fieldIndex].Length;
-                    Console.CursorVisible = true;
                     ClearMainOptions(optionNames);
                     PrintEditingKeyInstructions();
                     Console.SetCursorPosition(cursorIndex, 3 + fieldIndex);
 
-                    while (true)
+                    bool shouldExit = false;
+                    while (!shouldExit)
                     {
+                        Console.CursorVisible = true;
                         var editKey = Console.ReadKey(true);
 
-                        if (editKey.Key == ConsoleKey.Escape || editKey.Key == ConsoleKey.Enter)
+                        if (editKey.Key == ConsoleKey.Enter)
                         {
+                            Console.CursorVisible = false;
+
                             if (!Utils.ValidateDomainEntityName(fieldContents[0].Trim()))
                             {
                                 PrintErrorMessage("Please make sure the project's name has 3-50 characters and contains only letters, numbers, (, ), -, and spaces!");
@@ -283,9 +289,9 @@ Left/Right | Moves cursor");
                             }
 
                             int confirmationIndex = 0;
-                            ClearMainOptions(optionNames);
-                            PrintConfirmationMessage($"Do you wish to save your changes to {projectID}'s attributes?");
-                            PrintConfirmationOptions("Save changes", "Discard", confirmationIndex);
+                            ClearEditingKeyInstructions();
+                            PrintConfirmationMessage($"Do you wish to save your changes to project {projectID}'s attributes?");
+                            PrintConfirmationOptions("Save changes", "Keep editing", confirmationIndex);
 
                             while (true)
                             {
@@ -295,22 +301,27 @@ Left/Right | Moves cursor");
                                 {
                                     confirmationIndex = (confirmationIndex - 1 + 2) % 2;
                                     ClearConfirmationOptions();
-                                    PrintConfirmationOptions("Save changes", "Discard", confirmationIndex);
+                                    PrintConfirmationOptions("Save changes", "Keep editing", confirmationIndex);
                                 }
                                 
                                 if (confirmationKey.Key == ConsoleKey.RightArrow)
                                 {
                                     confirmationIndex = (confirmationIndex + 1) % 2;
                                     ClearConfirmationOptions();
-                                    PrintConfirmationOptions("Save changes", "Discard", confirmationIndex);
+                                    PrintConfirmationOptions("Save changes", "Keep editing", confirmationIndex);
                                 }
 
                                 if (confirmationKey.Key == ConsoleKey.Enter)
                                 {
+                                    ClearConfirmationOptions();
+                                    ClearConfirmationMessage();
+
                                     if (confirmationIndex == 1)
                                     {
-                                        ClearConfirmationOptions();
-                                        PrintMainOptions(optionNames, optionIndex);
+                                        PrintEditingKeyInstructions();
+                                        Console.SetCursorPosition(cursorIndex, 3 + fieldIndex);
+                                        logs.Add($"Cursor position after not saving changes: ({cursorIndex}, {3 + fieldIndex})");
+                                        Console.CursorVisible = true;
                                         break;
                                     }
 
@@ -339,7 +350,56 @@ Left/Right | Moves cursor");
                                     change.Description = null;
                                     change.Status = null;
 
-                                    ClearEditingKeyInstructions();
+                                    shouldExit = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (editKey.Key == ConsoleKey.Escape)
+                        {
+                            Console.CursorVisible = false;
+                            int confirmationIndex = 0;
+                            ClearEditingKeyInstructions();
+                            PrintConfirmationMessage("Are you sure you want to exit the editing page? Your modifications will be lost.");
+                            PrintConfirmationOptions("Exit without saving", "Keep editing", confirmationIndex);
+
+                            while (true)
+                            {
+                                var confirmationKey = Console.ReadKey(true);
+
+                                if (confirmationKey.Key == ConsoleKey.LeftArrow)
+                                {
+                                    confirmationIndex = (confirmationIndex - 1 + 2) % 2;
+                                    ClearConfirmationOptions();
+                                    PrintConfirmationOptions("Exit without saving", "Keep editing", confirmationIndex);
+                                }
+                                
+                                if (confirmationKey.Key == ConsoleKey.RightArrow)
+                                {
+                                    confirmationIndex = (confirmationIndex + 1) % 2;
+                                    ClearConfirmationOptions();
+                                    PrintConfirmationOptions("Exit without saving", "Keep editing", confirmationIndex);
+                                }
+
+                                if (confirmationKey.Key == ConsoleKey.Enter)
+                                {
+                                    ClearConfirmationOptions();
+                                    ClearConfirmationMessage();
+
+                                    if (confirmationIndex == 1)
+                                    {
+                                        PrintEditingKeyInstructions();
+                                        Console.SetCursorPosition(cursorIndex, 3 + fieldIndex);
+                                        logs.Add($"Cursor position after not exiting without saving: ({cursorIndex}, {3 + fieldIndex})");
+                                        Console.CursorVisible = true;
+                                        break;
+                                    }
+
+                                    fieldContents = [oldFieldContents[0], oldFieldContents[1], oldFieldContents[2]];
+                                    ClearFields(fieldNames);
+                                    PrintFields(fieldNames, fieldContents, longestFieldLength);
+                                    shouldExit = true;
                                     break;
                                 }
                             }
@@ -400,7 +460,10 @@ Left/Right | Moves cursor");
                             continue;
                         }
 
-                        if (char.IsLetterOrDigit(editKey.KeyChar) || char.IsPunctuation(editKey.KeyChar) || char.IsWhiteSpace(editKey.KeyChar))
+                        if (!char.IsControl(editKey.KeyChar)
+                         && (char.IsLetterOrDigit(editKey.KeyChar)
+                          || char.IsPunctuation(editKey.KeyChar)
+                          || char.IsWhiteSpace(editKey.KeyChar)))
                         {
                             fieldContents[fieldIndex] = fieldContents[fieldIndex].Insert(cursorIndex - minCursorHorizontalPosition, editKey.KeyChar.ToString());
                             cursorIndex++;
@@ -422,7 +485,7 @@ Left/Right | Moves cursor");
                     cursorIndex = 32;
                     string newName = "";
                     ClearMainOptions(optionNames);
-                    ClearFields(fieldNames, fieldContents, longestFieldLength);
+                    ClearFields(fieldNames);
                     PrintCopyKeyInstructions();
                     Console.SetCursorPosition(0, 3);
                     Console.Write("Select a new name for the copy: ");
@@ -434,28 +497,26 @@ Left/Right | Moves cursor");
                     {
                         var copyKey = Console.ReadKey(true);
 
-                        if (copyKey.Key == ConsoleKey.Escape || copyKey.Key == ConsoleKey.Enter)
+                        if (copyKey.Key == ConsoleKey.Enter)
                         {
+                            Console.CursorVisible = false;
+
                             if (!Utils.ValidateDomainEntityName(newName.Trim()))
                             {
-                                ClearConfirmationOptions();
                                 PrintErrorMessage("Please make sure the project's name has 3-50 characters and contains only letters, numbers, (, ), -, and spaces!");
                                 continue;
                             }
 
                             if (await DomainService.IsProjectDuplicate(context, currentUser.ID, newName.Trim(), project.ID))
                             {
-                                ClearConfirmationOptions();
                                 PrintErrorMessage($"Current user already has a project named '{newName.Trim()}' (case-insensitive)!");
                                 continue;
                             }
 
                             int confirmationIndex = 0;
-                            Console.CursorVisible = false;
-                            ClearEditingKeyInstructions();
                             ClearCopyKeyInstructions();
                             PrintConfirmationMessage("Do you wish to create a copy of the project with this name?");
-                            PrintConfirmationOptions("Copy", "Discard", confirmationIndex);
+                            PrintConfirmationOptions("Create copy", "Keep editing", confirmationIndex);
 
                             while (true)
                             {
@@ -463,35 +524,83 @@ Left/Right | Moves cursor");
 
                                 if (confirmationKey.Key == ConsoleKey.LeftArrow)
                                 {
-                                    confirmationIndex = (confirmationIndex - 1 + 2) % 2;
+                                    confirmationIndex = (confirmationIndex + 1) % 2;
                                     ClearConfirmationOptions();
-                                    PrintConfirmationOptions("Copy", "Discard", confirmationIndex);
+                                    PrintConfirmationOptions("Create copy", "Keep editing", confirmationIndex);
                                 }
                                 
                                 if (confirmationKey.Key == ConsoleKey.RightArrow)
                                 {
                                     confirmationIndex = (confirmationIndex + 1) % 2;
                                     ClearConfirmationOptions();
-                                    PrintConfirmationOptions("Copy", "Discard", confirmationIndex);
+                                    PrintConfirmationOptions("Create copy", "Keep editing", confirmationIndex);
                                 }
 
                                 if (confirmationKey.Key == ConsoleKey.Enter)
                                 {
-                                    ClearConfirmationOptions();
-                                    Console.SetCursorPosition(0, 3);
-                                    Console.Write(new string(' ', 200));
-                                    PrintMainOptions(optionNames, optionIndex);
-
                                     if (confirmationIndex == 1)
                                     {
+                                        PrintCopyKeyInstructions();
+                                        Console.SetCursorPosition(cursorIndex, 3);
+                                        logs.Add($"Cursor position after not saving changes: ({cursorIndex}, 3)");
+                                        Console.CursorVisible = true;
                                         break;
                                     }
+
+                                    ClearConfirmationOptions();
+                                    ClearConfirmationMessage();
+                                    Console.SetCursorPosition(0, 3);
+                                    Console.Write(new string(' ', 200));
 
                                     int copyID = await DomainService.CopyProject(context, newName.Trim(), currentUser.ID, project.ID!.Value, null);
                                     await context.SaveChangesAsync();
 
                                     logs.Add($"Project was successfully copied! Copy's ID: {copyID}.");
                                     shouldExit = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (copyKey.Key == ConsoleKey.Escape)
+                        {
+                            int confirmationIndex = 0;
+                            Console.CursorVisible = false;
+                            ClearCopyKeyInstructions();
+                            PrintConfirmationMessage("Are you sure you want to exit without copying the project?");
+                            PrintConfirmationOptions("Yes", "No", confirmationIndex);
+
+                            while (true)
+                            {
+                                var confirmationKey = Console.ReadKey(true);
+
+                                if (confirmationKey.Key == ConsoleKey.LeftArrow)
+                                {
+                                    confirmationIndex = (confirmationIndex + 1) % 2;
+                                    ClearConfirmationOptions();
+                                    PrintConfirmationOptions("Yes", "No", confirmationIndex);
+                                }
+                                
+                                if (confirmationKey.Key == ConsoleKey.RightArrow)
+                                {
+                                    confirmationIndex = (confirmationIndex + 1) % 2;
+                                    ClearConfirmationOptions();
+                                    PrintConfirmationOptions("Yes", "No", confirmationIndex);
+                                }
+
+                                if (confirmationKey.Key == ConsoleKey.Enter)
+                                {
+                                    ClearConfirmationOptions();
+                                    ClearConfirmationMessage();
+                                    Console.SetCursorPosition(0, 3);
+                                    Console.Write(new string(' ', 200));
+                                    shouldExit = true;
+
+                                    if (confirmationIndex == 1)
+                                    {
+                                        break;
+                                    }
+                                    
                                     break;
                                 }
                             }
@@ -536,7 +645,10 @@ Left/Right | Moves cursor");
                             continue;
                         }
 
-                        if (char.IsLetterOrDigit(copyKey.KeyChar) || char.IsPunctuation(copyKey.KeyChar) || char.IsWhiteSpace(copyKey.KeyChar))
+                        if (!char.IsControl(copyKey.KeyChar)
+                         && (char.IsLetterOrDigit(copyKey.KeyChar)
+                          || char.IsPunctuation(copyKey.KeyChar)
+                          || char.IsWhiteSpace(copyKey.KeyChar)))
                         {
                             newName = newName.Insert(cursorIndex - 32, copyKey.KeyChar.ToString());
                             cursorIndex++;
@@ -551,6 +663,7 @@ Left/Right | Moves cursor");
 
                 if (optionIndex == 2 && isProjectLocal)
                 {
+
                     if (!await DomainService.IsProjectOwnedByUser(context, currentUser.ID, projectID))
                     {
                         throw new Services.Exceptions.UnauthorizedAccessException();
@@ -585,12 +698,14 @@ Left/Right | Moves cursor");
                         if (confirmationKey.Key == ConsoleKey.LeftArrow)
                         {
                             confirmationIndex = (confirmationIndex - 1 + 2) % 2;
+                            ClearConfirmationOptions();
                             PrintConfirmationOptions("Yes", "No", confirmationIndex);
                         }
                         
                         if (confirmationKey.Key == ConsoleKey.RightArrow)
                         {
                             confirmationIndex = (confirmationIndex + 1) % 2;
+                            ClearConfirmationOptions();
                             PrintConfirmationOptions("Yes", "No", confirmationIndex);
                         }
 
@@ -598,6 +713,7 @@ Left/Right | Moves cursor");
                         {
                             if (confirmationIndex == 1)
                             {
+                                ClearConfirmationMessage();
                                 ClearConfirmationOptions();
                                 PrintMainOptions(optionNames, optionIndex);
                                 break;
