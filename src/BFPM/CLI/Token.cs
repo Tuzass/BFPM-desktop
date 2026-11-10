@@ -26,7 +26,6 @@ public enum TokenType
     Switch,
     Tag,
     Task,
-    Upload,
     User
 }
 

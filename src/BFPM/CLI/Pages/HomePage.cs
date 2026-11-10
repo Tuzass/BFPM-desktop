@@ -108,7 +108,7 @@ Type 'help' to see the available commands";
                         Console.WriteLine("Invalid ID(s)!");
                         break;
                     
-                    case NonlocalChangeException:
+                    case NonlocalProjectException:
                         Console.WriteLine("Can't make changes to nonlocal projects through the CLI! Please launch the usual BFPM application to make such changes!");
                         break;
                     

@@ -33,7 +33,7 @@ public class DeleteProjectCommand : ICommand
 
             if (!await DomainService.IsProjectLocal(context, ProjectID))
             {
-                throw new NonlocalChangeException();
+                throw new NonlocalProjectException();
             }
 
             await DomainService.DeleteProject(context, ProjectID);

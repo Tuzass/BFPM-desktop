@@ -34,7 +34,7 @@ public class NewTaskCommand : ICommand
 
             if (!await DomainService.IsProjectLocal(context, ProjectID))
             {
-                throw new NonlocalChangeException();
+                throw new NonlocalProjectException();
             }
 
             var task = await TaskCreationPage.Run(context, ProjectID);

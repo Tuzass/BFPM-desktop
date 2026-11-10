@@ -36,7 +36,7 @@ public class EditTagCommand : ICommand
 
             if (!await DomainService.IsProjectLocal(context, tag.ProjectID))
             {
-                throw new NonlocalChangeException();
+                throw new NonlocalProjectException();
             }
 
             var localChange = await TagEditPage.Run(context, TagID);

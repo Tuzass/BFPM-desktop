@@ -9,10 +9,12 @@ namespace BFPM.CLI.Commands;
 
 public class EnterProjectCommand : ICommand
 {
+    private readonly ApiClient _apiClient = null!;
     public int ProjectID {get; private set;}
 
-    public EnterProjectCommand(int projectID)
+    public EnterProjectCommand(ApiClient apiClient, int projectID)
     {
+        _apiClient = apiClient;
         ProjectID = projectID;
     }
 
@@ -34,22 +36,14 @@ public class EnterProjectCommand : ICommand
 
             if (!await DomainService.IsProjectLocal(context, ProjectID))
             {
-                throw new NonlocalChangeException();
+                throw new NonlocalProjectException();
             }
 
-            var change = await ProjectEditPage.Run(context, ProjectID);
+            var logs = await ProjectEditPage.Run(context, _apiClient, ProjectID);
 
-            if (change is null)
+            foreach (var log in logs)
             {
-                return;
-            }
-            
-            if (change.Name is not null || change.Description is not null || change.Status is not null)
-            {
-                await DomainService.ApplyChange(context, change);
-                await context.SaveChangesAsync();
-
-                Console.WriteLine($"Project {ProjectID} changed");
+                Console.WriteLine(log);
             }
         }
     }

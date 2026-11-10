@@ -36,7 +36,7 @@ public class EditTaskCommand : ICommand
 
             if (!await DomainService.IsProjectLocal(context, task.ProjectID))
             {
-                throw new NonlocalChangeException();
+                throw new NonlocalProjectException();
             }
 
             var localChange = await TaskEditPage.Run(context, TaskID);

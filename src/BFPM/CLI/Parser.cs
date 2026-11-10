@@ -34,7 +34,7 @@ public class Parser
                 return ParseDelete(tokens[1..]);
             
             case TokenType.Enter:
-                return ParseEnter(tokens[1..]);
+                return ParseEnter(apiClient, tokens[1..]);
             
             case TokenType.Exit:
                 return null;
@@ -85,9 +85,6 @@ public class Parser
                 }
 
                 throw new UnexpectedTokenException();
-            
-            case TokenType.Upload:
-                return ParseUpload(apiClient, tokens[1..]);
         }
 
         return null;
@@ -201,7 +198,7 @@ public class Parser
         throw new UnexpectedTokenException();
     }
 
-    public static ICommand ParseEnter(List<Token> tokens)
+    public static ICommand ParseEnter(ApiClient apiClient, List<Token> tokens)
     {
         if (tokens.Count < 3)
         {
@@ -229,7 +226,7 @@ public class Parser
                 throw new InvalidIdException();
             }
 
-            return new EnterProjectCommand(projectID);
+            return new EnterProjectCommand(apiClient, projectID);
         }
 
         if (tokens[0].Type == TokenType.Task
@@ -457,23 +454,6 @@ public class Parser
             }
 
             return new RemoveTagFromTaskCommand(taskID, tagID);
-        }
-
-        throw new UnexpectedTokenException();
-    }
-
-    public static ICommand ParseUpload(ApiClient apiClient, List<Token> tokens)
-    {
-        if (tokens[0].Type == TokenType.Project
-         && tokens[1].Type == TokenType.Integer
-         && tokens[2].Type == TokenType.End)
-        {
-            if (tokens[1].Value is not int projectID)
-            {
-                throw new InvalidIdException();
-            }
-
-            return new UploadProjectCommand(apiClient, projectID);
         }
 
         throw new UnexpectedTokenException();

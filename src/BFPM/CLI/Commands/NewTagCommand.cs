@@ -34,7 +34,7 @@ public class NewTagCommand : ICommand
 
             if (!await DomainService.IsProjectLocal(context, ProjectID))
             {
-                throw new NonlocalChangeException();
+                throw new NonlocalProjectException();
             }
 
             var task = await TagCreationPage.Run(context, ProjectID);

@@ -35,7 +35,7 @@ public class DeleteTagCommand : ICommand
 
             if (!await DomainService.IsProjectLocal(context, tag.ProjectID))
             {
-                throw new NonlocalChangeException();
+                throw new NonlocalProjectException();
             }
 
             await DomainService.DeleteTag(context, TagID);
