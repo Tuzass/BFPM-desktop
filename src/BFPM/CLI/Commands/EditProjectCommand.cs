@@ -7,16 +7,16 @@ using BFPM.CLI.Exceptions;
 
 namespace BFPM.CLI.Commands;
 
-public class EditProjectCommand : ICommand
+public class EnterProjectCommand : ICommand
 {
     public int ProjectID {get; private set;}
 
-    public EditProjectCommand(int projectID)
+    public EnterProjectCommand(int projectID)
     {
         ProjectID = projectID;
     }
 
-    private EditProjectCommand()
+    private EnterProjectCommand()
     {
         
     }
@@ -37,17 +37,20 @@ public class EditProjectCommand : ICommand
                 throw new NonlocalChangeException();
             }
 
-            var localChange = await ProjectEditPage.Run(context, ProjectID);
+            var change = await ProjectEditPage.Run(context, ProjectID);
 
-            if (localChange is null)
+            if (change is null)
             {
                 return;
             }
             
-            await DomainService.ApplyChange(context, localChange);
-            await context.SaveChangesAsync();
+            if (change.Name is not null || change.Description is not null || change.Status is not null)
+            {
+                await DomainService.ApplyChange(context, change);
+                await context.SaveChangesAsync();
 
-            Console.WriteLine($"Project {ProjectID} changed\nName: {localChange.Name}, Description: {localChange.Description}, Status: {localChange.Status}");
+                Console.WriteLine($"Project {ProjectID} changed");
+            }
         }
     }
 }

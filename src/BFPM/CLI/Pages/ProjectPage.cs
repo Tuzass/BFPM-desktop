@@ -1,0 +1,612 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Domain.Enums;
+using Infrastructure.Database;
+using Infrastructure.Entities;
+using Infrastructure.Enums;
+using Services;
+
+namespace BFPM.CLI.Pages;
+
+public class ProjectEditPage
+{
+    public ProjectEditPage()
+    {
+        
+    }
+
+    private static void PrintTitle(int projectID, int? remoteID = null)
+    {
+        Console.SetCursorPosition(0, 0);
+        Console.Write($"Project {projectID}");
+        Console.SetCursorPosition(0, 1);
+
+        if (remoteID is null)
+        {
+            Console.Write("Local project");
+        }
+
+        else
+        {
+            Console.Write($"Associated with remote project of ID {remoteID.Value}");
+        }
+    }
+
+    private static void PrintFields(List<string> fieldNames, List<string> fieldContents, int longestFieldLength)
+    {
+        int minCursorHorizontalPosition = longestFieldLength + 2;
+
+        for (int i = 0; i < fieldNames.Count; i++)
+        {
+            Console.SetCursorPosition(0, 3 + i);
+            Console.Write((fieldNames[i] + ": ").PadRight(minCursorHorizontalPosition) + fieldContents[i]);
+        }
+    }
+
+    private static void ClearFields(List<string> fieldNames, List<string> fieldContents, int longestFieldLength)
+    {
+        int minCursorHorizontalPosition = longestFieldLength + 2;
+
+        for (int i = 0; i < fieldNames.Count; i++)
+        {
+            Console.SetCursorPosition(0, 3 + i);
+            Console.Write(new string(' ', minCursorHorizontalPosition + fieldContents[i].Length));
+        }
+    }
+
+    private static void PrintMainOptions(List<string> optionNames, int optionIndex)
+    {
+        for (int i = 0; i < optionNames.Count; i++)
+        {
+            Console.SetCursorPosition(0, 7 + i);
+
+            if (i == optionIndex)
+            {
+                Console.Write("> ");
+            }
+
+            else
+            {
+                Console.Write("  ");
+            }
+
+            Console.Write(optionNames[i]);
+        }
+    }
+
+    private static void ClearMainOptions(List<string> optionNames)
+    {
+        for (int i = 0; i < optionNames.Count; i++)
+        {
+            Console.SetCursorPosition(0, 7 + i);
+            Console.Write(new string(' ', optionNames[i].Length + 2));
+        }
+    }
+
+    private static void PrintConfirmationOptionIndicator(int optionIndex)
+    {
+        Console.SetCursorPosition(0, 9);
+
+        if (optionIndex == 0)
+        {
+            Console.Write(" V      ");
+        }
+
+        else
+        {
+            Console.Write("       V");
+        }
+    }
+
+    private static void PrintConfirmationMessage(string message)
+    {
+        Console.SetCursorPosition(0, 7);
+        Console.Write(message);
+    }
+
+    private static void PrintConfirmationOptions()
+    {
+        Console.SetCursorPosition(0, 10);
+        Console.Write("Yes | No");
+    }
+
+    private static void ClearConfirmationOptions()
+    {
+        Console.SetCursorPosition(0, 7);
+        Console.Write(new string(' ', 200));
+
+        Console.SetCursorPosition(0, 9);
+        Console.Write(new string(' ', 8));
+
+        Console.SetCursorPosition(0, 10);
+        Console.Write(new string(' ', 8));
+    }
+    
+    private static void PrintEditingKeyInstructions()
+    {
+        Console.SetCursorPosition(0, 7);
+        Console.Write(@"Status options: 1 (Active), 2 (On Hold), 3 (Archived), 4 (Completed)
+ESC/Enter | Finishes editing
+Up | Moves to next field
+Down/Tab | Moves to previous field
+Left/Right | Moves cursor within field");
+    }
+
+    private static void ClearEditingKeyInstructions()
+    {
+        Console.SetCursorPosition(0, 7);
+        Console.Write(new string(' ', 68));
+
+        Console.SetCursorPosition(0, 8);
+        Console.Write(new string(' ', 28));
+
+        Console.SetCursorPosition(0, 9);
+        Console.Write(new string(' ', 24));
+
+        Console.SetCursorPosition(0, 10);
+        Console.Write(new string(' ', 34));
+
+        Console.SetCursorPosition(0, 11);
+        Console.Write(new string(' ', 38));
+    }
+
+    private static void PrintCopyKeyInstructions()
+    {
+        Console.SetCursorPosition(0, 7);
+        Console.Write(@"ESC/Enter | Finishes editing
+Left/Right | Moves cursor within field");
+    }
+
+    private static void ClearCopyKeyInstructions()
+    {
+        Console.SetCursorPosition(0, 7);
+        Console.Write(new string(' ', 28));
+
+        Console.SetCursorPosition(0, 8);
+        Console.Write(new string(' ', 38));
+    }
+
+    private static void PrintErrorMessage(string message)
+    {
+        Console.SetCursorPosition(0, 12);
+        Console.Write(message);
+    }
+
+    private static void ClearErrorMessage()
+    {
+        Console.SetCursorPosition(0, 12);
+        Console.Write(new string(' ', 200));
+    }
+
+    public static async Task<Change?> Run(AppDbContext context, int projectID)
+    {
+        var currentUser = await UserService.GetCurrentUser();
+        var project = await DomainService.GetProjectByID(context, projectID);
+        Change change = new(DomainEntityType.Project, projectID, null, null, null, null, null, false);
+
+        string statusString = project.Status switch
+        {
+            ProjectStatus.Active => "1",
+            ProjectStatus.OnHold => "2",
+            ProjectStatus.Archived => "3",
+            ProjectStatus.Completed => "4",
+            _ => "1"  
+        };
+
+        List<string> fieldNames = ["Name", "Description", "Status"];
+        List<string> fieldContents = [project.Name, project.Description, statusString];
+        List<string> statusOptions = ["1", "2", "3", "4"];
+        int fieldCount = fieldNames.Count;
+        int fieldIndex;
+
+        int longestFieldLength = 0;
+        foreach (var fieldName in fieldNames)
+        {
+            if (fieldName.Length > longestFieldLength)
+            {
+                longestFieldLength = fieldName.Length;
+            }
+        }
+
+        int minCursorHorizontalPosition = longestFieldLength + 2;
+
+        Console.Write("\x1b[?1049h");
+        Console.Write("\x1b[?7l");
+        Console.Clear();
+        PrintTitle(projectID, project.RemoteID);
+
+        List<string> optionNames = ["Edit fields", "Save and exit", "Create copy", "Cancel"];
+
+        if (project.RemoteID is null)
+        {
+            optionNames.Insert(3, "Upload and exit");
+        }
+
+        int optionCount = optionNames.Count;
+        int optionIndex = 0;
+        int cursorIndex;
+
+        while (true)
+        {
+            PrintFields(fieldNames, fieldContents, longestFieldLength);
+            PrintMainOptions(optionNames, optionIndex);
+            Console.CursorVisible = false;
+            var key = Console.ReadKey(true);
+
+            if (key.Key == ConsoleKey.Enter)
+            {
+                ClearMainOptions(optionNames);
+                ClearErrorMessage();
+
+                if (optionIndex == 1)
+                {
+                    if (!Utils.ValidateDomainEntityName(fieldContents[0].Trim()))
+                    {
+                        PrintErrorMessage("Please make sure the project's name has 3-50 characters and contains only letters, numbers, (, ), -, and spaces!");
+                        continue;
+                    }
+
+                    if (await DomainService.IsProjectDuplicate(context, currentUser.ID, fieldContents[0].Trim(), project.ID))
+                    {
+                        PrintErrorMessage($"Current user already has a project named '{fieldContents[0].Trim()}' (case-insensitive)!");
+                        continue;
+                    }
+
+                    if (!Utils.ValidateDomainEntityDescription(fieldContents[1].Trim()))
+                    {
+                        PrintErrorMessage("Please make sure it is less than 2000 characters long!");
+                        continue;
+                    }
+
+                    if (!statusOptions.Contains(fieldContents[2].Trim()))
+                    {
+                        PrintErrorMessage("Please choose a number from 1-4 for the project status!");
+                        continue;
+                    }
+
+                    int confirmationIndex = 0;
+                    ClearMainOptions(optionNames);
+                    PrintConfirmationMessage($"Are you sure you want to change project {projectID}'s attributes to these?");
+                    PrintConfirmationOptionIndicator(confirmationIndex);
+                    PrintConfirmationOptions();
+
+                    while (true)
+                    {
+                        var confirmationKey = Console.ReadKey(true);
+
+                        if (confirmationKey.Key == ConsoleKey.LeftArrow)
+                        {
+                            confirmationIndex = (confirmationIndex - 1 + 2) % 2;
+                            PrintConfirmationOptionIndicator(confirmationIndex);
+                        }
+                        
+                        if (confirmationKey.Key == ConsoleKey.RightArrow)
+                        {
+                            confirmationIndex = (confirmationIndex + 1) % 2;
+                            PrintConfirmationOptionIndicator(confirmationIndex);
+                        }
+
+                        if (confirmationKey.Key == ConsoleKey.Enter)
+                        {
+                            if (confirmationIndex == 1)
+                            {
+                                ClearConfirmationOptions();
+                                PrintMainOptions(optionNames, optionIndex);
+                                break;
+                            }
+
+                            Console.CursorVisible = true;
+                            Console.Write("\x1b[?7h");
+                            Console.Write("\x1b[?1049l");
+                            return change;
+                        }
+                    }
+
+                    continue;
+                }
+
+                if (optionIndex == 2)
+                {
+                    if (!await DomainService.IsProjectAssignedToUser(context, currentUser.ID, project.ID!.Value))
+                    {
+                        PrintErrorMessage("User is not authorized to copy this project.");
+                        continue;
+                    }
+
+                    cursorIndex = 32;
+                    string newName = "";
+                    ClearMainOptions(optionNames);
+                    ClearFields(fieldNames, fieldContents, longestFieldLength);
+                    PrintCopyKeyInstructions();
+                    Console.SetCursorPosition(0, 3);
+                    Console.Write("Select a new name for the copy: ");
+                    Console.SetCursorPosition(32, 3);
+                    Console.CursorVisible = true;
+
+                    while (true)
+                    {
+                        var copyKey = Console.ReadKey(true);
+
+                        if (copyKey.Key == ConsoleKey.Escape || copyKey.Key == ConsoleKey.Enter)
+                        {
+                            int confirmationIndex = 0;
+                            Console.CursorVisible = false;
+                            ClearEditingKeyInstructions();
+                            ClearCopyKeyInstructions();
+                            PrintConfirmationMessage("Create copy with this name?");
+                            PrintConfirmationOptionIndicator(confirmationIndex);
+                            PrintConfirmationOptions();
+
+                            while (true)
+                            {
+                                var confirmationKey = Console.ReadKey(true);
+
+                                if (confirmationKey.Key == ConsoleKey.LeftArrow)
+                                {
+                                    confirmationIndex = (confirmationIndex - 1 + 2) % 2;
+                                    PrintConfirmationOptionIndicator(confirmationIndex);
+                                }
+                                
+                                if (confirmationKey.Key == ConsoleKey.RightArrow)
+                                {
+                                    confirmationIndex = (confirmationIndex + 1) % 2;
+                                    PrintConfirmationOptionIndicator(confirmationIndex);
+                                }
+
+                                if (confirmationKey.Key == ConsoleKey.Enter)
+                                {
+                                    if (confirmationIndex == 1)
+                                    {
+                                        ClearConfirmationOptions();
+                                        Console.SetCursorPosition(0, 3);
+                                        Console.Write(new string(' ', 200));
+                                        PrintMainOptions(optionNames, optionIndex);
+                                        break;
+                                    }
+
+                                    if (!Utils.ValidateDomainEntityName(newName.Trim()))
+                                    {
+                                        ClearConfirmationOptions();
+                                        PrintErrorMessage("Please make sure the project's name has 3-50 characters and contains only letters, numbers, (, ), -, and spaces!");
+                                        continue;
+                                    }
+
+                                    if (await DomainService.IsProjectDuplicate(context, currentUser.ID, newName.Trim(), project.ID))
+                                    {
+                                        ClearConfirmationOptions();
+                                        PrintErrorMessage($"Current user already has a project named '{newName.Trim()}' (case-insensitive)!");
+                                        continue;
+                                    }
+
+                                    int copyID = await DomainService.CopyProject(context, newName, currentUser.ID, project.ID!.Value, null);
+                                    await context.SaveChangesAsync();
+
+                                    ClearConfirmationOptions();
+                                    Console.SetCursorPosition(0, 3);
+                                    Console.Write(new string(' ', 200));
+                                    PrintMainOptions(optionNames, optionIndex);
+                                    PrintErrorMessage($"Project was successfully copied! Copy's ID: {copyID}.");
+                                    break;
+                                }
+                            }
+
+                            break;
+                        }
+
+                        if (copyKey.Key == ConsoleKey.LeftArrow)
+                        {
+                            if (cursorIndex == 32)
+                            {
+                                continue;
+                            }
+
+                            cursorIndex--;
+                            Console.SetCursorPosition(cursorIndex, 2);
+                            continue;
+                        }
+
+                        if (copyKey.Key == ConsoleKey.RightArrow)
+                        {
+                            if (cursorIndex == 32 + newName.Length)
+                            {
+                                continue;
+                            }
+
+                            cursorIndex++;
+                            Console.SetCursorPosition(cursorIndex, 2);
+                            continue;
+                        }
+
+                        if (copyKey.Key == ConsoleKey.Backspace)
+                        {
+                            if (cursorIndex == 32)
+                            {
+                                continue;
+                            }
+
+                            newName = newName.Remove(cursorIndex - 32 - 1, 1);
+                            cursorIndex--;
+                            Console.SetCursorPosition(32, 3);
+                            Console.Write(newName + " ");
+                            Console.SetCursorPosition(cursorIndex, 3);
+                            continue;
+                        }
+
+                        if (char.IsLetterOrDigit(copyKey.KeyChar) || char.IsPunctuation(copyKey.KeyChar) || char.IsWhiteSpace(copyKey.KeyChar))
+                        {
+                            newName = newName.Insert(cursorIndex - 32, copyKey.KeyChar.ToString());
+                            cursorIndex++;
+                            Console.SetCursorPosition(32, 3);
+                            Console.Write(newName);
+                            Console.SetCursorPosition(cursorIndex, 3);
+                        }
+
+                        continue;
+                    }
+
+                    continue;
+                }
+
+                if (optionIndex == 3 && optionCount == 5)
+                {
+                    continue;
+                }
+
+                if ((optionIndex == 3 && optionCount == 4) || (optionIndex == 4 && optionCount == 5))
+                {
+                    int confirmationIndex = 0;
+                    ClearMainOptions(optionNames);
+                    PrintConfirmationMessage("Are you sure you want to exit the project's page? Any unsaved modifications will be lost");
+                    PrintConfirmationOptionIndicator(confirmationIndex);
+                    PrintConfirmationOptions();
+
+                    while (true)
+                    {
+                        var confirmationKey = Console.ReadKey(true);
+
+                        if (confirmationKey.Key == ConsoleKey.LeftArrow)
+                        {
+                            confirmationIndex = (confirmationIndex - 1 + 2) % 2;
+                            PrintConfirmationOptionIndicator(confirmationIndex);
+                        }
+                        
+                        if (confirmationKey.Key == ConsoleKey.RightArrow)
+                        {
+                            confirmationIndex = (confirmationIndex + 1) % 2;
+                            PrintConfirmationOptionIndicator(confirmationIndex);
+                        }
+
+                        if (confirmationKey.Key == ConsoleKey.Enter)
+                        {
+                            if (confirmationIndex == 1)
+                            {
+                                ClearConfirmationOptions();
+                                PrintMainOptions(optionNames, optionIndex);
+                                break;
+                            }
+
+                            Console.CursorVisible = true;
+                            Console.Write("\x1b[?7h");
+                            Console.Write("\x1b[?1049l");
+                            return null;
+                        }
+                    }
+
+                    continue;
+                }
+
+                fieldIndex = 0;
+                cursorIndex = minCursorHorizontalPosition + fieldContents[fieldIndex].Length;
+                Console.CursorVisible = true;
+                ClearMainOptions(optionNames);
+                PrintEditingKeyInstructions();
+                Console.SetCursorPosition(cursorIndex, 3 + fieldIndex);
+
+                while (true)
+                {
+                    var editKey = Console.ReadKey(true);
+
+                    if (editKey.Key == ConsoleKey.Escape || editKey.Key == ConsoleKey.Enter)
+                    {
+                        string newName = fieldContents[0].Trim();
+                        string newDescription = fieldContents[1].Trim();
+                        string newStatusString = fieldContents[2].Trim();
+
+                        DomainEntityStatus newStatus = newStatusString switch
+                        {
+                            "1" => DomainEntityStatus.Active,
+                            "2" => DomainEntityStatus.OnHold,
+                            "3" => DomainEntityStatus.Archived,
+                            "4" => DomainEntityStatus.Completed,
+                            _ => DomainEntityStatus.Active 
+                        };
+
+                        change.Name = newName == project.Name ? null : newName;
+                        change.Description = newDescription == project.Description ? null : newDescription;
+                        change.Status = newStatusString == statusString ? null : newStatus;
+
+                        ClearEditingKeyInstructions();
+                        break;
+                    }
+
+                    if (editKey.Key == ConsoleKey.UpArrow)
+                    {
+                        fieldIndex = (fieldIndex - 1 + fieldCount) % fieldCount;
+                        cursorIndex = minCursorHorizontalPosition + fieldContents[fieldIndex].Length;
+                        Console.SetCursorPosition(cursorIndex, 3 + fieldIndex);
+                        continue;
+                    }
+
+                    if (editKey.Key == ConsoleKey.DownArrow || editKey.Key == ConsoleKey.Tab)
+                    {
+                        fieldIndex = (fieldIndex + 1) % fieldCount;
+                        cursorIndex = minCursorHorizontalPosition + fieldContents[fieldIndex].Length;
+                        Console.SetCursorPosition(cursorIndex, 3 + fieldIndex);
+                        continue;
+                    }
+
+                    if (editKey.Key == ConsoleKey.LeftArrow)
+                    {
+                        if (cursorIndex == minCursorHorizontalPosition)
+                        {
+                            continue;
+                        }
+
+                        cursorIndex--;
+                        Console.SetCursorPosition(cursorIndex, 3 + fieldIndex);
+                        continue;
+                    }
+
+                    if (editKey.Key == ConsoleKey.RightArrow)
+                    {
+                        if (cursorIndex == minCursorHorizontalPosition + fieldContents[fieldIndex].Length)
+                        {
+                            continue;
+                        }
+
+                        cursorIndex++;
+                        Console.SetCursorPosition(cursorIndex, 3 + fieldIndex);
+                        continue;
+                    }
+
+                    if (editKey.Key == ConsoleKey.Backspace)
+                    {
+                        if (cursorIndex == minCursorHorizontalPosition)
+                        {
+                            continue;
+                        }
+
+                        fieldContents[fieldIndex] = fieldContents[fieldIndex].Remove(cursorIndex - minCursorHorizontalPosition - 1, 1);
+                        cursorIndex--;
+                        Console.SetCursorPosition(minCursorHorizontalPosition, 3 + fieldIndex);
+                        Console.Write(fieldContents[fieldIndex] + " ");
+                        Console.SetCursorPosition(cursorIndex, 3 + fieldIndex);
+                        continue;
+                    }
+
+                    if (char.IsLetterOrDigit(editKey.KeyChar) || char.IsPunctuation(editKey.KeyChar) || char.IsWhiteSpace(editKey.KeyChar))
+                    {
+                        fieldContents[fieldIndex] = fieldContents[fieldIndex].Insert(cursorIndex - minCursorHorizontalPosition, editKey.KeyChar.ToString());
+                        cursorIndex++;
+                        Console.SetCursorPosition(minCursorHorizontalPosition, 3 + fieldIndex);
+                        Console.Write(fieldContents[fieldIndex]);
+                        Console.SetCursorPosition(cursorIndex, 3 + fieldIndex);
+                    }
+                }
+            }
+        
+            else if (key.Key == ConsoleKey.UpArrow)
+            {
+                optionIndex = (optionIndex - 1 + optionCount) % optionCount;
+                PrintMainOptions(optionNames, optionIndex);
+            }
+            
+            else if (key.Key == ConsoleKey.DownArrow)
+            {
+                optionIndex = (optionIndex + 1) % optionCount;
+                PrintMainOptions(optionNames, optionIndex);
+            }
+        }
+    }
+}

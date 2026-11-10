@@ -647,22 +647,10 @@ public static class DomainService
         context.Tags.Remove(tag);
     }
 
-    public static async Task<int> CopyProject(AppDbContext context, int newOwnerID, int projectID, int? remoteID = null)
+    public static async Task<int> CopyProject(AppDbContext context, string newName, int newOwnerID, int projectID, int? remoteID = null)
     {
         var project = await GetProjectByID(context, projectID);
-
-        string newProjectName = project.Name;
-        bool isDuplicate = await context.Projects
-            .AnyAsync(p => p.OwnerID == newOwnerID && p.Name == project.Name);     
-
-        while (isDuplicate)
-        {
-            newProjectName += " - copy";
-            isDuplicate = await context.Projects
-            .AnyAsync(p => p.OwnerID == newOwnerID && p.Name == newProjectName);
-        }
-
-        Project newProject = new(null, remoteID, newOwnerID, newOwnerID, newProjectName, project.Description, project.Status, null, null);
+        Project newProject = new(null, remoteID, newOwnerID, newOwnerID, newName, project.Description, project.Status, null, null);
 
         if (project.Status == ProjectStatus.Completed)
         {

@@ -28,10 +28,6 @@ public class Lexer
                     tokens.Add(new(TokenType.Clear));
                     break;
                 
-                case "copy":
-                    tokens.Add(new(TokenType.Copy));
-                    break;
-                
                 case "current_user":
                     tokens.Add(new(TokenType.CurrentUser));
                     break;
@@ -40,8 +36,8 @@ public class Lexer
                     tokens.Add(new(TokenType.Delete));
                     break;
                 
-                case "edit":
-                    tokens.Add(new(TokenType.Edit));
+                case "enter":
+                    tokens.Add(new(TokenType.Enter));
                     break;
                 
                 case "exit":

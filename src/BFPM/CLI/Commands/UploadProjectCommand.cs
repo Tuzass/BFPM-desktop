@@ -48,28 +48,12 @@ public class UploadProjectCommand : ICommand
             string originalName = project.Name;
             int remoteID = await _apiClient.UploadProject(project.Name, project.Description, project.Status, tasks, tags, taskTagLinks);
 
-            try
-            {
-                int remoteCopyID = await DomainService.CopyProject(context, currentUser.ID, ProjectID, remoteID);
+            Change change = new(Infrastructure.Enums.DomainEntityType.Project, ProjectID, originalName + " - Local copy", null, null, null, null, false);
+            await DomainService.ApplyChange(context, change);
 
-                Change change = new(Infrastructure.Enums.DomainEntityType.Project, remoteCopyID, " ", null, null, null, null, false);
-                await DomainService.ApplyChange(context, change);
-
-                change = new(Infrastructure.Enums.DomainEntityType.Project, ProjectID, originalName + " - Local copy", null, null, null, null, false);
-                await DomainService.ApplyChange(context, change);
-
-                change = new(Infrastructure.Enums.DomainEntityType.Project, remoteCopyID, originalName, null, null, null, null, false);
-                await DomainService.ApplyChange(context, change);
-
-                Console.WriteLine($"Project {originalName} (ID: {ProjectID}) successfully uploaded!");
-                Console.WriteLine($"Project with ID {remoteCopyID} is now associated to the remote copy!");
-            }
-
-            catch (DbUpdateException e)
-            {
-                Console.WriteLine(e.InnerException?.Message);
-                throw;
-            }
+            int remoteCopyID = await DomainService.CopyProject(context, originalName, currentUser.ID, ProjectID, remoteID);
+            Console.WriteLine($"Project {originalName} (ID: {ProjectID}) successfully uploaded!");
+            Console.WriteLine($"Project with ID {remoteCopyID} is now associated to the remote copy!");
         }
     }
 }

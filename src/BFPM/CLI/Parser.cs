@@ -8,7 +8,7 @@ namespace BFPM.CLI;
 
 public class Parser
 {
-    private readonly static TokenType[] ValidHelpCommands = [TokenType.Assign, TokenType.Clear, TokenType.Copy, TokenType.Delete, TokenType.Edit, TokenType.Exit, TokenType.List, TokenType.Login, TokenType.Logoff, TokenType.New, TokenType.Print, TokenType.Register, TokenType.Remove, TokenType.Switch];
+    private readonly static TokenType[] ValidHelpCommands = [TokenType.Assign, TokenType.Clear, TokenType.Delete, TokenType.Enter, TokenType.Exit, TokenType.List, TokenType.Login, TokenType.Logoff, TokenType.New, TokenType.Print, TokenType.Register, TokenType.Remove, TokenType.Switch];
 
     public static ICommand? Parse(List<Token> tokens, ApiClient apiClient)
     {
@@ -30,14 +30,11 @@ public class Parser
 
                 throw new UnexpectedTokenException();
             
-            case TokenType.Copy:
-                return ParseCopy(tokens[1..]);
-            
             case TokenType.Delete:
                 return ParseDelete(tokens[1..]);
             
-            case TokenType.Edit:
-                return ParseEdit(tokens[1..]);
+            case TokenType.Enter:
+                return ParseEnter(tokens[1..]);
             
             case TokenType.Exit:
                 return null;
@@ -134,27 +131,6 @@ public class Parser
         throw new UnexpectedTokenException();
     }
 
-    public static ICommand ParseCopy(List<Token> tokens)
-    {
-        if (tokens.Count < 2)
-        {
-            throw new UnexpectedTokenException();
-        }
-
-        if (tokens[0].Type == TokenType.Integer
-         && tokens[1].Type == TokenType.End)
-        {
-            if (tokens[0].Value is not int projectID)
-            {
-                throw new InvalidIdException();
-            }
-
-            return new CopyProjectCommand(projectID);
-        }
-
-        throw new UnexpectedTokenException();
-    }
-
     public static ICommand ParseDelete(List<Token> tokens)
     {
         if (tokens.Count < 3)
@@ -225,25 +201,8 @@ public class Parser
         throw new UnexpectedTokenException();
     }
 
-    public static ICommand ParseEdit(List<Token> tokens)
+    public static ICommand ParseEnter(List<Token> tokens)
     {
-        if (tokens.Count < 2)
-        {
-            throw new UnexpectedTokenException();
-        }
-
-        if (tokens[0].Type == TokenType.CurrentUser
-         && tokens[1].Type == TokenType.End)
-        {
-            return new EditCurrentUserCommand();
-        }
-
-        if (tokens[0].Type == TokenType.Settings
-         && tokens[1].Type == TokenType.End)
-        {
-            return new EditSettingsCommand();
-        }
-
         if (tokens.Count < 3)
         {
             throw new UnexpectedTokenException();
@@ -258,7 +217,7 @@ public class Parser
                 throw new InvalidIdException();
             }
 
-            return new EditFolderCommand(folderID);
+            return new EditFolderCommand(folderID); // TODO: change to EnterFolderCommand
         }
 
         if (tokens[0].Type == TokenType.Project
@@ -270,7 +229,7 @@ public class Parser
                 throw new InvalidIdException();
             }
 
-            return new EditProjectCommand(projectID);
+            return new EnterProjectCommand(projectID);
         }
 
         if (tokens[0].Type == TokenType.Task
@@ -282,7 +241,7 @@ public class Parser
                 throw new InvalidIdException();
             }
 
-            return new EditTaskCommand(taskID);
+            return new EditTaskCommand(taskID); // TODO: change to EnterTaskCommand
         }
 
         if (tokens[0].Type == TokenType.Tag
@@ -294,7 +253,7 @@ public class Parser
                 throw new InvalidIdException();
             }
 
-            return new EditTagCommand(tagID);
+            return new EditTagCommand(tagID); // TODO: change to EnterTagCommand
         }
 
         throw new UnexpectedTokenException();
