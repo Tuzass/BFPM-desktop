@@ -5,13 +5,15 @@ using Domain.Enums;
 using Infrastructure.Database;
 using Infrastructure.Entities;
 using Infrastructure.Enums;
+using Microsoft.EntityFrameworkCore;
 using Services;
+using Services.Exceptions;
 
 namespace BFPM.CLI.Pages;
 
-public class ProjectEditPage
+public class ProjectPage
 {
-    public ProjectEditPage()
+    public ProjectPage()
     {
         
     }
@@ -78,7 +80,7 @@ public class ProjectEditPage
         for (int i = 0; i < optionNames.Count; i++)
         {
             Console.SetCursorPosition(0, 7 + i);
-            Console.Write(new string(' ', optionNames[i].Length + 2));
+            Console.Write(new string(' ', 100));
         }
     }
 
@@ -222,11 +224,12 @@ Left/Right | Moves cursor");
         Console.Clear();
         PrintTitle(projectID, project.RemoteID);
 
-        List<string> optionNames = ["Edit fields", "Create copy", "Exit"];
+        List<string> optionNames = ["Edit fields", "Commit changes", "Pull changes", "Create copy", "Exit"];
 
         if (isProjectLocal)
         {
-            optionNames.Insert(2, "Upload");
+            optionNames[1] = "Upload";
+            optionNames.Remove("Pull changes");
         }
 
         int optionCount = optionNames.Count;
@@ -270,7 +273,7 @@ Left/Right | Moves cursor");
                                 continue;
                             }
 
-                            if (await DomainService.IsProjectDuplicate(context, currentUser.ID, fieldContents[0].Trim(), project.ID))
+                            if (await DomainService.IsProjectNameDuplicate(context, currentUser.ID, fieldContents[0].Trim(), project.ID))
                             {
                                 PrintErrorMessage($"Current user already has a project named '{fieldContents[0].Trim()}' (case-insensitive)!");
                                 continue;
@@ -320,10 +323,11 @@ Left/Right | Moves cursor");
                                     {
                                         PrintEditingKeyInstructions();
                                         Console.SetCursorPosition(cursorIndex, 3 + fieldIndex);
-                                        logs.Add($"Cursor position after not saving changes: ({cursorIndex}, {3 + fieldIndex})");
                                         Console.CursorVisible = true;
                                         break;
                                     }
+
+                                    // TODO: implement changes being persisted to the DB for remote projects
 
                                     string newName = fieldContents[0].Trim();
                                     string newDescription = fieldContents[1].Trim();
@@ -391,7 +395,6 @@ Left/Right | Moves cursor");
                                     {
                                         PrintEditingKeyInstructions();
                                         Console.SetCursorPosition(cursorIndex, 3 + fieldIndex);
-                                        logs.Add($"Cursor position after not exiting without saving: ({cursorIndex}, {3 + fieldIndex})");
                                         Console.CursorVisible = true;
                                         break;
                                     }
@@ -474,7 +477,64 @@ Left/Right | Moves cursor");
                     }
                 }
 
-                if (optionIndex == 1)
+                if (optionIndex == 1 && isProjectLocal) // upload
+                {
+                    if (!await DomainService.IsProjectOwnedByUser(context, currentUser.ID, projectID))
+                    {
+                        throw new Services.Exceptions.UnauthorizedAccessException();
+                    }
+                    
+                    var tasks = await DomainService.GetTasksByProject(context, projectID);
+                    var tags = await DomainService.GetTagsByProject(context, projectID);
+                    var taskTagLinks = await DomainService.GetTaskTagLinksByProject(context, projectID);
+
+                    Console.SetCursorPosition(2, 8);
+                    Console.Write("Uploading...");
+
+                    try
+                    {
+                        int remoteID = await apiClient.UploadProject(project.Name, project.Description, project.Status, tasks, tags, taskTagLinks);
+                        int remoteCopyID = await DomainService.CopyProject(context, currentUser.ID, projectID, null, remoteID);
+                        await context.SaveChangesAsync();
+
+                        PrintErrorMessage($"Project {project.Name} (ID: {project.ID}) successfully uploaded!\nProject with ID {remoteCopyID} is now associated to the remote copy!");
+
+                        logs.Add($"Project {project.Name} (ID: {project.ID}) successfully uploaded!\nProject with ID {remoteCopyID} is now associated to the remote copy!");
+                    }
+
+                    catch (Services.Exceptions.UnauthorizedAccessException)
+                    {
+                        PrintErrorMessage("The user must own the project to upload it.");
+                        Console.SetCursorPosition(2, 8);
+                        Console.Write("Upload      ");
+                    }
+
+                    catch (DuplicateProjectException)
+                    {
+                        PrintErrorMessage("You already own a remote project with this name.");
+                        Console.SetCursorPosition(2, 8);
+                        Console.Write("Upload      ");
+                    }
+
+                    catch (ServerUnavailableException)
+                    {
+                        PrintErrorMessage("The server is currently unavailable, please try again later.");
+                        Console.SetCursorPosition(2, 8);
+                        Console.Write("Upload      ");
+                    }
+                }
+
+                if (optionIndex == 1 && !isProjectLocal) // commit changes
+                {
+                    // TODO: implement
+                }
+
+                if (optionIndex == 2 && !isProjectLocal) // pull changes
+                {
+                    // TODO: implement
+                }
+
+                if (optionIndex == optionCount - 2) // create copy
                 {
                     if (!await DomainService.IsProjectAssignedToUser(context, currentUser.ID, project.ID!.Value))
                     {
@@ -490,11 +550,11 @@ Left/Right | Moves cursor");
                     Console.SetCursorPosition(0, 3);
                     Console.Write("Select a new name for the copy: ");
                     Console.SetCursorPosition(32, 3);
-                    Console.CursorVisible = true;
 
                     bool shouldExit = false;
                     while (!shouldExit)
                     {
+                        Console.CursorVisible = true;
                         var copyKey = Console.ReadKey(true);
 
                         if (copyKey.Key == ConsoleKey.Enter)
@@ -507,7 +567,7 @@ Left/Right | Moves cursor");
                                 continue;
                             }
 
-                            if (await DomainService.IsProjectDuplicate(context, currentUser.ID, newName.Trim(), project.ID))
+                            if (await DomainService.IsProjectNameDuplicate(context, currentUser.ID, newName.Trim(), project.ID))
                             {
                                 PrintErrorMessage($"Current user already has a project named '{newName.Trim()}' (case-insensitive)!");
                                 continue;
@@ -542,7 +602,6 @@ Left/Right | Moves cursor");
                                     {
                                         PrintCopyKeyInstructions();
                                         Console.SetCursorPosition(cursorIndex, 3);
-                                        logs.Add($"Cursor position after not saving changes: ({cursorIndex}, 3)");
                                         Console.CursorVisible = true;
                                         break;
                                     }
@@ -552,8 +611,10 @@ Left/Right | Moves cursor");
                                     Console.SetCursorPosition(0, 3);
                                     Console.Write(new string(' ', 200));
 
-                                    int copyID = await DomainService.CopyProject(context, newName.Trim(), currentUser.ID, project.ID!.Value, null);
+                                    int copyID = await DomainService.CopyProject(context, currentUser.ID, project.ID!.Value, newName.Trim(), null);
                                     await context.SaveChangesAsync();
+
+                                    PrintErrorMessage($"Project was successfully copied! Copy's ID: {copyID}.");
 
                                     logs.Add($"Project was successfully copied! Copy's ID: {copyID}.");
                                     shouldExit = true;
@@ -661,30 +722,7 @@ Left/Right | Moves cursor");
                     }
                 }
 
-                if (optionIndex == 2 && isProjectLocal)
-                {
-
-                    if (!await DomainService.IsProjectOwnedByUser(context, currentUser.ID, projectID))
-                    {
-                        throw new Services.Exceptions.UnauthorizedAccessException();
-                    }
-                    
-                    var tasks = await DomainService.GetTasksByProject(context, projectID);
-                    var tags = await DomainService.GetTagsByProject(context, projectID);
-                    var taskTagLinks = await DomainService.GetTaskTagLinksByProject(context, projectID);
-                    
-                    string originalName = project.Name;
-                    int remoteID = await apiClient.UploadProject(project.Name, project.Description, project.Status, tasks, tags, taskTagLinks);
-
-                    Change nameChange = new(DomainEntityType.Project, projectID, originalName + " - Local copy", null, null, null, null, false); // TODO: check if original + '- Local copy' is actually avaliable first
-                    await DomainService.ApplyChange(context, nameChange);
-                    int remoteCopyID = await DomainService.CopyProject(context, originalName, currentUser.ID, projectID, remoteID);
-                    await context.SaveChangesAsync();
-
-                    logs.Add($"Project {originalName} (ID: {project.ID}) successfully uploaded!\nProject with ID {remoteCopyID} is now associated to the remote copy!");
-                }
-
-                if (optionIndex == optionCount - 1)
+                if (optionIndex == optionCount - 1) // exit
                 {
                     int confirmationIndex = 0;
                     ClearMainOptions(optionNames);

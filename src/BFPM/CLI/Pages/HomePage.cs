@@ -40,6 +40,9 @@ Type 'help' to see the available commands";
                 currentUser = await UserService.GetCurrentUser();
             }
 
+            // TODO: implement project syncing on login
+            // remote projects assigned to user must have a local copy => download missing ones
+            // local projects associated to remote projects that don't exist anymore must be deleted => offer user to create a local copy before deleting it
             Console.WriteLine($"Currently logged in as: {currentUser.Username}");
         }
 

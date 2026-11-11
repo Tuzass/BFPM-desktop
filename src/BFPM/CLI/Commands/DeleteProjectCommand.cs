@@ -28,11 +28,13 @@ public class DeleteProjectCommand : ICommand
         {
             if (!await DomainService.IsProjectAssignedToUser(context, currentUser.ID, ProjectID))
             {
+                // TODO: change to IsProjectOwnerByUser
                 throw new UnauthorizedAccessException();
             }
 
             if (!await DomainService.IsProjectLocal(context, ProjectID))
             {
+                // TODO: implement remote project deletion if associated with a remote project
                 throw new NonlocalProjectException();
             }
 
