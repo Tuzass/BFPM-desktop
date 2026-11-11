@@ -61,7 +61,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .OnDelete(DeleteBehavior.NoAction);
         
         modelBuilder.Entity<Project>()
-            .HasIndex(p => new {p.OwnerID, p.Name}).IsUnique();
+            .HasIndex(p => new {p.OwnerID, p.Name})
+            .IsUnique()
+            .HasFilter("RemoteID IS NULL");
+
+        modelBuilder.Entity<Project>()
+            .HasIndex(p => new {p.OwnerID, p.Name})
+            .IsUnique()
+            .HasFilter("RemoteID IS NOT NULL");
 
         modelBuilder.Entity<Project>()
             .HasIndex(p => new {p.RemoteID, p.AssignedUserID}).IsUnique();
