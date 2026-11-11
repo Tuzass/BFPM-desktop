@@ -1,8 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
 
 namespace Infrastructure.Database;
 
-public class AppDbContextFactory
+public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     static private string GetDatabasePath()
     {
@@ -25,7 +26,11 @@ public class AppDbContextFactory
             .Options;
         
         var context = new AppDbContext(options);
-        context.Database.EnsureCreated();
         return context;
+    }
+
+    public AppDbContext CreateDbContext(string[] args)
+    {
+        return CreateContext();
     }
 }
