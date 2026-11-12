@@ -6,6 +6,7 @@ namespace Infrastructure.Entities;
 public class Change
 {
     public int ID {get; private set;}
+    public int UserID {get; private set;}
     public DomainEntityType TargetType {get; private set;}
     public int TargetID {get; private set;}
     public string? Name {get; set;}
@@ -20,8 +21,9 @@ public class Change
         
     }
 
-    public Change(DomainEntityType targetType, int targetID, string? name, string? description, DomainEntityStatus? status, TaskItemPriority? priority, DateTime? dueDate, bool dueDateChanged)
+    public Change(int userID, DomainEntityType targetType, int targetID, string? name, string? description, DomainEntityStatus? status, TaskItemPriority? priority, DateTime? dueDate, bool dueDateChanged)
     {
+        UserID = userID;
         TargetType = targetType;
         TargetID = targetID;
         Name = name;

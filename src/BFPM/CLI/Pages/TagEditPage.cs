@@ -131,6 +131,7 @@ Left/Right | Moves cursor within field");
 
     public static async Task<Change?> Run(AppDbContext context, int tagID)
     {
+        var currentUser = await UserService.GetCurrentUser();
         var tag = await DomainService.GetTagByID(context, tagID);
         string name = tag.Name;
         int minCursorHorizontalPosition = 6;
@@ -207,7 +208,8 @@ Left/Right | Moves cursor within field");
                             Console.Write("\x1b[?7h");
                             Console.Write("\x1b[?1049l");
 
-                            return new(DomainEntityType.Tag, tagID,
+                            return new(currentUser.ID,
+                                       DomainEntityType.Tag, tagID,
                                        name == tag.Name ? null : name,
                                        null,
                                        null,

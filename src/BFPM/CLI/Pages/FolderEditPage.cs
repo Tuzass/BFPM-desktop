@@ -143,6 +143,7 @@ Left/Right | Moves cursor within field");
 
     public static async Task<Change?> Run(AppDbContext context, int currentUserID, int folderID)
     {
+        var currentUser = await UserService.GetCurrentUser();
         var folder = await DomainService.GetFolderByID(context, folderID);
 
         List<string> fieldNames = ["Name", "Description"];
@@ -242,7 +243,8 @@ Left/Right | Moves cursor within field");
                             string newName = fieldContents[0].Trim();
                             string newDescription = fieldContents[1].Trim();
 
-                            return new(DomainEntityType.Folder, folderID,
+                            return new(currentUser.ID,
+                                       DomainEntityType.Folder, folderID,
                                        newName == folder.Name ? null : newName,
                                        newDescription == folder.Description ? null : newDescription,
                                        null,

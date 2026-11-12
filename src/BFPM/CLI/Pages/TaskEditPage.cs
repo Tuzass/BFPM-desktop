@@ -158,6 +158,7 @@ Left/Right | Moves cursor within field");
 
     public static async Task<Change?> Run(AppDbContext context, int taskID)
     {
+        var currentUser = await UserService.GetCurrentUser();
         var task = await DomainService.GetTaskByID(context, taskID);
 
         string statusString = task.Status switch
@@ -336,7 +337,8 @@ Left/Right | Moves cursor within field");
                                 _ => TaskItemPriority.Low 
                             };
 
-                            return new(DomainEntityType.Task, taskID,
+                            return new(currentUser.ID,
+                                       DomainEntityType.Task, taskID,
                                        newName == task.Name ? null : newName,
                                        newDescription == task.Description ? null : newDescription,
                                        newStatusString == statusString ? null : newStatus,

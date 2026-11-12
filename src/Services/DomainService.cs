@@ -42,8 +42,22 @@ public static class DomainService
 
     public static async Task<bool> IsProjectNameDuplicate(AppDbContext context, int ownerID, string projectName, int? projectID = null)
     {
+        if (projectID is null)
+        {
+            return await context.Projects
+                .AnyAsync(p => p.OwnerID == ownerID && p.Name == projectName);
+        }
+
+        var project = await GetProjectByID(context, projectID.Value);
+
+        if (project.RemoteID is null)
+        {
+            return await context.Projects
+                .AnyAsync(p => p.ID != projectID && p.RemoteID == null && p.OwnerID == ownerID && p.Name == projectName);
+        }
+
         return await context.Projects
-            .AnyAsync(p => p.ID != projectID && p.OwnerID == ownerID && p.Name == projectName);
+            .AnyAsync(p => p.ID != projectID && p.RemoteID != null && p.OwnerID == ownerID && p.Name == projectName);
     }
 
     public static async Task<bool> IsTaskDuplicate(AppDbContext context, int projectID, string taskName, int? taskID = null)
@@ -738,6 +752,30 @@ public static class DomainService
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+    }
+
+    public static async Task<Change?> GetChange(AppDbContext context, DomainEntityType targetType, int targetID)
+    {
+        return await context.Changes
+            .SingleOrDefaultAsync(c => c.TargetType == targetType && c.TargetID == targetID);
+    }
+
+    public static async Task StoreOrReplaceChange(AppDbContext context, Change change)
+    {
+        var oldChange = await context.Changes
+            .SingleOrDefaultAsync(c => c.UserID == change.UserID && c.TargetType == change.TargetType && c.TargetID == change.TargetID);
+        
+        if (oldChange is not null)
+        {
+            oldChange.Name = change.Name;
+            oldChange.Description = change.Description;
+            oldChange.Status = change.Status;
+        }
+
+        else
+        {
+            context.Changes.Add(change);
         }
     }
 }

@@ -24,10 +24,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .ValueGeneratedNever();
 
         modelBuilder.Entity<User>()
-            .HasIndex(u => u.Username).IsUnique();
+            .HasIndex(u => u.Username)
+            .IsUnique();
 
         modelBuilder.Entity<User>()
-            .HasIndex(u => u.Email).IsUnique();
+            .HasIndex(u => u.Email)
+            .IsUnique();
 
         modelBuilder.Entity<Folder>()
             .Property(f => f.ID)
@@ -44,7 +46,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .OnDelete(DeleteBehavior.NoAction);
         
         modelBuilder.Entity<Folder>()
-            .HasIndex(f => new {f.OwnerID, f.Name}).IsUnique();
+            .HasIndex(f => new {f.OwnerID, f.Name})
+            .IsUnique();
         
         modelBuilder.Entity<Project>()
             .Property(p => p.ID)
@@ -71,7 +74,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasFilter("RemoteID IS NOT NULL");
 
         modelBuilder.Entity<Project>()
-            .HasIndex(p => new {p.RemoteID, p.AssignedUserID}).IsUnique();
+            .HasIndex(p => new {p.RemoteID, p.AssignedUserID})
+            .IsUnique();
         
         modelBuilder.Entity<TaskItem>()
             .Property(t => t.ID)
@@ -82,7 +86,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .UseCollation("NOCASE");
         
         modelBuilder.Entity<TaskItem>()
-            .HasIndex(t => new {t.ProjectID, t.Name}).IsUnique();
+            .HasIndex(t => new {t.ProjectID, t.Name})
+            .IsUnique();
         
         modelBuilder.Entity<TaskItem>()
             .HasOne<Project>()
@@ -99,7 +104,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .UseCollation("NOCASE");
 
         modelBuilder.Entity<Tag>()
-            .HasIndex(t => new {t.ProjectID, t.Name}).IsUnique();
+            .HasIndex(t => new {t.ProjectID, t.Name})
+            .IsUnique();
         
         modelBuilder.Entity<Tag>()
             .HasOne<Project>()
@@ -136,5 +142,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .WithMany()
             .HasForeignKey(ttl => ttl.TagID)
             .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<Change>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(c => c.UserID)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<Change>()
+            .HasIndex(c => new {c.UserID, c.TargetType, c.TargetID})
+            .IsUnique();
     }
 }

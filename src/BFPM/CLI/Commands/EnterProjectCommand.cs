@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Services;
 using Infrastructure.Database;
 using BFPM.CLI.Pages;
+using System.Collections.Generic;
 
 namespace BFPM.CLI.Commands;
 
@@ -33,7 +34,17 @@ public class EnterProjectCommand : ICommand
                 throw new Services.Exceptions.UnauthorizedAccessException();
             }
 
-            var logs = await ProjectPage.Run(context, _apiClient, ProjectID);
+            List<string> logs = [];
+
+            if (await DomainService.IsProjectLocal(context, ProjectID))
+            {
+                logs = await LocalProjectPage.Run(context, _apiClient, ProjectID);
+            }
+
+            else
+            {
+                logs = await RemoteProjectPage.Run(context, _apiClient, ProjectID);
+            }
 
             foreach (var log in logs)
             {

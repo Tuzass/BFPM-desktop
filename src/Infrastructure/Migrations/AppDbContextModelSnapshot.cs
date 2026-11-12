@@ -220,7 +220,13 @@ namespace Infrastructure.Migrations
                     b.Property<int>("TargetType")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("UserID")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("ID");
+
+                    b.HasIndex("UserID", "TargetType", "TargetID")
+                        .IsUnique();
 
                     b.ToTable("Changes");
                 });
@@ -337,6 +343,15 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Project", null)
                         .WithMany()
                         .HasForeignKey("ProjectID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Infrastructure.Entities.Change", b =>
+                {
+                    b.HasOne("Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
