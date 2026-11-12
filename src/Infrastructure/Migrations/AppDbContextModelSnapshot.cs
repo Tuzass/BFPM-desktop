@@ -111,12 +111,18 @@ namespace Infrastructure.Migrations
                     b.Property<int>("ProjectID")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("RemoteID")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Version")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("ID");
 
                     b.HasIndex("ProjectID", "Name")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectID", "RemoteID")
                         .IsUnique();
 
                     b.ToTable("Tags");
@@ -152,6 +158,9 @@ namespace Infrastructure.Migrations
                     b.Property<int>("ProjectID")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("RemoteID")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
 
@@ -161,6 +170,9 @@ namespace Infrastructure.Migrations
                     b.HasKey("ID");
 
                     b.HasIndex("ProjectID", "Name")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectID", "RemoteID")
                         .IsUnique();
 
                     b.ToTable("Tasks");

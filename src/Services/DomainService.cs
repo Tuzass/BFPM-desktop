@@ -273,6 +273,7 @@ public static class DomainService
             {
                 assignedTasks.Add(new(
                     task.ID,
+                    null,
                     task.ProjectID,
                     task.Name,
                     task.Description,
@@ -365,7 +366,7 @@ public static class DomainService
             throw new DuplicateTaskException();
         }
 
-        TaskItem newTask = new(null, projectID, taskName, taskDescription, taskStatus, taskPriority, taskDueDate, null, null);
+        TaskItem newTask = new(null, null, projectID, taskName, taskDescription, taskStatus, taskPriority, taskDueDate, null, null);
         context.Tasks.Add(newTask);
     }
 
@@ -379,7 +380,7 @@ public static class DomainService
             throw new DuplicateTagException();
         }
 
-        Tag newTag = new(null, projectID, tagName);
+        Tag newTag = new(null, null, projectID, tagName);
         context.Tags.Add(newTag);
     }
 
@@ -723,7 +724,7 @@ public static class DomainService
 
                 foreach (var t in tasks)
                 {
-                    TaskItem newTask = new(null, newProject.ID!.Value, t.Name, t.Description, t.Status, t.Priority, t.DueDate, null, null);
+                    TaskItem newTask = new(null, null, newProject.ID!.Value, t.Name, t.Description, t.Status, t.Priority, t.DueDate, null, null);
 
                     if (t.Status == TaskItemStatus.Completed)
                     {
@@ -740,7 +741,7 @@ public static class DomainService
 
                 foreach (var t in tags)
                 {
-                    Tag newTag = new(null, newProject.ID!.Value, t.Name);
+                    Tag newTag = new(null, null, newProject.ID!.Value, t.Name);
                     newTags.Add(newTag);
                     newTagsByOldID.Add(t.ID!.Value, newTag);
                 }

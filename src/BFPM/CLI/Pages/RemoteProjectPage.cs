@@ -264,7 +264,7 @@ Left/Right | Moves cursor");
         }
 
         int minCursorHorizontalPosition = longestFieldLength + 2;
-        List<string> optionNames = ["Edit fields", "Commit changes", "Pull changes", "Create copy", "Exit"];
+        List<string> optionNames = ["Edit fields", "Commit changes", "Pull changes", "Create copy", "Exit"]; // TODO: add "Manage workflow rules"
         int optionCount = optionNames.Count;
         int optionIndex = 0;
         int cursorIndex;
@@ -408,6 +408,10 @@ Left/Right | Moves cursor");
                                     change.Status = newStatusString == ProjectStatusToString(project.Status) ? null : newStatus;
                                     await DomainService.StoreOrReplaceChange(context, change);
                                     await context.SaveChangesAsync();
+
+                                    // TODO: add RemoteID to tasks and tags
+                                    // when uploading a project, retrieve it and save IDs as RemoteIDs
+                                    // DomainService and Change work with IDs, SynchronizationService works with RemoteIDs
 
                                     PrintErrorMessage(errorMessageRow, "Changes were saved. Select 'Commit changes' to submit them to the remote project.");
                                     logs.Add("Changes were saved.");

@@ -5,6 +5,18 @@ namespace Infrastructure.Database;
 
 public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
+    public AppDbContextFactory()
+    {
+        string dbPath = GetDatabasePath();
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(string.Concat("Data Source=", dbPath))
+            .Options;
+        
+        var context = new AppDbContext(options);
+        context.Database.Migrate();
+    }
+
     static private string GetDatabasePath()
     {
         string dbFileName = "data.db";

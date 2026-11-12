@@ -90,6 +90,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .IsUnique();
         
         modelBuilder.Entity<TaskItem>()
+            .HasIndex(p => new {p.ProjectID, p.RemoteID})
+            .IsUnique();
+        
+        modelBuilder.Entity<TaskItem>()
             .HasOne<Project>()
             .WithMany()
             .HasForeignKey(t => t.ProjectID)
@@ -105,6 +109,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<Tag>()
             .HasIndex(t => new {t.ProjectID, t.Name})
+            .IsUnique();
+        
+        modelBuilder.Entity<Tag>()
+            .HasIndex(p => new {p.ProjectID, p.RemoteID})
             .IsUnique();
         
         modelBuilder.Entity<Tag>()

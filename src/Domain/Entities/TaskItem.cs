@@ -5,6 +5,7 @@ namespace Domain.Entities;
 public class TaskItem
 {
     public int? ID {get; private set;}
+    public int? RemoteID {get; private set;}
     public int ProjectID {get; private set;}
     public string Name {get; set;} = null!;
     public string Description {get; set;} = null!;
@@ -20,9 +21,10 @@ public class TaskItem
         
     }
 
-    public TaskItem(int? id, int projectID, string name, string description, TaskItemStatus status, TaskItemPriority priority, DateTime? dueDate, DateTime? createdAt, DateTime? completedAt, int? version = null)
+    public TaskItem(int? id, int? remoteID, int projectID, string name, string description, TaskItemStatus status, TaskItemPriority priority, DateTime? dueDate, DateTime? createdAt, DateTime? completedAt, int? version = null)
     {
         ID = id;
+        RemoteID = remoteID;
         ProjectID = projectID;
         Name = name;
         Description = description;
@@ -31,16 +33,7 @@ public class TaskItem
         DueDate = dueDate;
         CreatedAt = (createdAt == null) ? DateTime.UtcNow : (DateTime)createdAt;
         CompletedAt = completedAt;
-
-        if (version is null)
-        {
-            Version = 1;
-        }
-
-        else
-        {
-            Version = version.Value;
-        }
+        Version = version is null ? 1 : version.Value;
     }
 
     public void IncreaseVersion()
