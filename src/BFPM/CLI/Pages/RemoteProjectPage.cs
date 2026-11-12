@@ -5,6 +5,7 @@ using Domain.Enums;
 using Infrastructure.Database;
 using Infrastructure.Entities;
 using Infrastructure.Enums;
+using Workflow.Enums;
 using Services;
 
 namespace BFPM.CLI.Pages;
@@ -411,10 +412,6 @@ Left/Right | Moves cursor");
                                     PrintErrorMessage(errorMessageRow, "Changes were saved. Select 'Commit changes' to submit them to the remote project.");
                                     logs.Add("Changes were saved.");
 
-                                    change.Name = null;
-                                    change.Description = null;
-                                    change.Status = null;
-
                                     shouldExit = true;
                                     break;
                                 }
@@ -540,8 +537,33 @@ Left/Right | Moves cursor");
                 }
 
                 if (optionIndex == 1) // commit changes
-                {
-                    // TODO: implement
+                {   
+                    var result = await SynchronizationService.CommitChanges(context, apiClient,
+                                                                            currentUser.ID,
+                                                                            projectID,
+                                                                            ActionType.ChangeAttribute,
+                                                                            DomainEntityType.Project,
+                                                                            projectID,
+                                                                            null,
+                                                                            null,
+                                                                            change);
+
+                    if (result)
+                    {
+                        PrintErrorMessage(errorMessageRow, "Changes were successfully commited to remote project! Applying changes to local project...");
+
+                        await DomainService.ApplyChange(context, change);
+                        await DomainService.DeleteStoredChange(context, currentUser.ID, DomainEntityType.Project, projectID);
+                        await context.SaveChangesAsync();
+
+                        ClearErrorMessage(errorMessageRow);
+                        PrintErrorMessage(errorMessageRow, "Changes were successfully commited to remote project! Changes were also applied successfully to the associated local project! Other entities may have been affected, so make sure to perform synchronization.");
+                    }
+
+                    else
+                    {
+                        PrintErrorMessage(errorMessageRow, "Changes were rejected by the server! Please perform synchronization on the entire project before submitting your changes again!");
+                    }
                 }
 
                 if (optionIndex == 2) // pull changes

@@ -585,14 +585,43 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> CreateAction(int userID, int projectID, ActionType actionType, DomainEntityType targetType, int targetID, DomainEntityType? relatedEntityType, int? relatedEntityID, Change? change, CancellationToken ct = default)
+    public async Task<AffectedEntitiesResponse> CreateAction(int userID, int projectID, ActionType actionType, DomainEntityType targetType, int targetID, DomainEntityType? relatedEntityType, int? relatedEntityID, Change? change, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
         try
         {
             CreateActionRequest request = new(userID, projectID, actionType, targetType, targetID, relatedEntityType, relatedEntityID, change);
-            return await CreateActionCore(request, ct);
+
+            using (var response = await CreateActionCore(request, ct))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    throw new Services.Exceptions.UnauthorizedAccessException();
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError
+                 || response.StatusCode == System.Net.HttpStatusCode.BadGateway
+                 || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    throw new ServerUnavailableException();
+                }
+
+                if (response.StatusCode != System.Net.HttpStatusCode.Created)
+                {
+                    throw new InvalidOperationException($"The requested action was rejected by the server with code: {response.StatusCode}.");
+                }
+
+                var affectedEntitiesResponse = await response.Content.ReadFromJsonAsync<AffectedEntitiesResponse>(cancellationToken: ct);
+
+                if (affectedEntitiesResponse is null)
+                {
+                    throw new InvalidOperationException("Affected entities not found in HTTP response");
+                }
+                
+                return affectedEntitiesResponse;
+            }
         }
         
         finally
@@ -601,14 +630,42 @@ public class ApiClient
         }
     }
 
-    public async Task<HttpResponseMessage> SendVersions(int userActionID, Dictionary<EntityIdPair, int> versions, CancellationToken ct = default)
+    public async Task<string> SendVersions(int userActionID, Dictionary<EntityIdPair, int> versions, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
         try
         {
             SendVersionsRequest request = new(versions);
-            return await SendVersionsCore(userActionID, request, ct);
+            using (var response = await SendVersionsCore(userActionID, request, ct))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    throw new Services.Exceptions.UnauthorizedAccessException();
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError
+                 || response.StatusCode == System.Net.HttpStatusCode.BadGateway
+                 || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    throw new ServerUnavailableException();
+                }
+
+                if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                {
+                    throw new InvalidOperationException($"The entities were rejected by the server with code: {response.StatusCode}.");
+                }
+
+                var userActionStatus = await response.Content.ReadFromJsonAsync<string>(cancellationToken: ct);
+
+                if (userActionStatus is null)
+                {
+                    throw new InvalidOperationException("Action status not found in HTTP response");
+                }
+                
+                return userActionStatus;
+            }
         }
         
         finally

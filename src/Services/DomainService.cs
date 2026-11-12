@@ -72,6 +72,27 @@ public static class DomainService
             .AnyAsync(t => t.ID != tagID && t.ProjectID == projectID && t.Name == tagName);
     }
 
+    public static async Task<int> GetEntityVersion(AppDbContext context, DomainEntityType entityType, int entityID)
+    {
+        switch (entityType)
+        {
+            case DomainEntityType.Project:
+                var project = await GetProjectByID(context, entityID);
+                return project.Version;
+            
+            case DomainEntityType.Task:
+                var task = await GetTaskByID(context, entityID);
+                return task.Version;
+            
+            case DomainEntityType.Tag:
+                var tag = await GetTagByID(context, entityID);
+                return tag.Version;
+            
+            default:
+                return -1;
+        }
+    }
+
     public static async Task<Folder> GetFolderByID(AppDbContext context, int folderID)
     {
         var folder = await context.Folders
@@ -776,6 +797,22 @@ public static class DomainService
         else
         {
             context.Changes.Add(change);
+        }
+    }
+
+    public static async Task DeleteStoredChange(AppDbContext context, int userID, DomainEntityType targetType, int targetID)
+    {
+        var change = await context.Changes
+            .SingleOrDefaultAsync(c => c.UserID == userID && c.TargetType == targetType && c.TargetID == targetID);
+        
+        if (change is null)
+        {
+            return;
+        }
+
+        else
+        {
+            context.Changes.Remove(change);
         }
     }
 }
