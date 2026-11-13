@@ -140,4 +140,23 @@ Name: {tag.Name}";
     {
         return password.Length >= 8 && password.Length <= 24;
     }
+
+    public static bool GetYesNoConfirmationCli(string question)
+    {
+        List<string> validAnswers = ["Y", "N", "y", "n"];
+        Console.Write(question + " (Y/N)");
+        string? answer = Console.ReadLine();
+
+        while (answer is null || !validAnswers.Contains(answer))
+        {
+            answer = Console.ReadLine();
+        }
+
+        if (answer == "Y" || answer == "y")
+        {
+            return true;
+        }
+
+        return false;
+    }
 }
