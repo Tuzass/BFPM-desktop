@@ -46,19 +46,11 @@ public static class DomainService
         if (projectID is null)
         {
             return await context.Projects
-                .AnyAsync(p => p.OwnerID == ownerID && p.Name == projectName);
-        }
-
-        var project = await GetProjectByID(context, projectID.Value);
-
-        if (project.RemoteID is null)
-        {
-            return await context.Projects
-                .AnyAsync(p => p.ID != projectID && p.RemoteID == null && p.OwnerID == ownerID && p.Name == projectName);
+                .AnyAsync(p => p.OwnerID == ownerID && !p.RemoteID.HasValue && p.Name == projectName);
         }
 
         return await context.Projects
-            .AnyAsync(p => p.ID != projectID && p.RemoteID != null && p.OwnerID == ownerID && p.Name == projectName);
+                .AnyAsync(p => p.ID != projectID && !p.RemoteID.HasValue && p.OwnerID == ownerID && p.Name == projectName);
     }
 
     public static async Task<bool> IsTaskDuplicate(AppDbContext context, int projectID, string taskName, int? taskID = null)
@@ -71,6 +63,12 @@ public static class DomainService
     {
         return await context.Tags
             .AnyAsync(t => t.ID != tagID && t.ProjectID == projectID && t.Name == tagName);
+    }
+
+    public static async Task<bool> DoesUserHaveAssociatedProject(AppDbContext context, int userID, int remoteID)
+    {
+        return await context.Projects
+            .AnyAsync(p => p.AssignedUserID == userID && p.RemoteID == remoteID);
     }
 
     public static async Task<int> GetEntityVersionByRemoteID(AppDbContext context, DomainEntityType entityType, int remoteEntityID)
@@ -269,6 +267,13 @@ public static class DomainService
             .Where(p => p.AssignedUserID == userID)
             .Where(p => !context.FolderProjectLinks
                 .Any(l => l.FolderID == folderID && l.ProjectID == p.ID))
+            .ToListAsync();
+    }
+
+    public static async Task<List<Project>> GetUserAssociatedProjects(AppDbContext context, int userID)
+    {
+        return await context.Projects
+            .Where(p => p.AssignedUserID == userID && p.RemoteID.HasValue)
             .ToListAsync();
     }
 
@@ -816,59 +821,6 @@ public static class DomainService
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return newProject.ID!.Value;
-            }
-
-            catch (DbUpdateException)
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-        }
-    }
-
-    public static async Task<int> StoreRemoteProject(AppDbContext context, int assignedUserID, ProjectResponse remoteProject)
-    {
-        using (var transaction = await context.Database.BeginTransactionAsync())
-        {
-            try
-            {
-                Project project = new(remoteProject.ID, remoteProject.OwnerID, assignedUserID, remoteProject.Name, remoteProject.Description, remoteProject.Status, remoteProject.CreatedAt, remoteProject.CompletedAt, remoteProject.Version);
-
-                if (project.Status == ProjectStatus.Completed)
-                {
-                    project.Complete();
-                }
-
-                context.Projects.Add(project);
-                await context.SaveChangesAsync();
-
-                List<TaskItem> tasks = [];
-                foreach (var task in remoteProject.Tasks)
-                {
-                    tasks.Add(new(task.ID, task.ProjectID, task.Name, task.Description, task.Status, task.Priority, task.DueDate, task.CreatedAt, task.CompletedAt, task.Version));
-                }
-
-                List<Tag> tags = [];
-                foreach (var tag in remoteProject.Tags)
-                {
-                    tags.Add(new(tag.ID, tag.ProjectID, tag.Name, tag.Version));
-                }
-
-                context.Tasks.AddRange(tasks);
-                context.Tags.AddRange(tags);
-                await context.SaveChangesAsync();
-                
-                foreach (var link in remoteProject.TaskTagLinks)
-                {
-                    int taskID = tasks.Single(t => t.RemoteID == link.TaskID).ID!.Value;
-                    int tagID = tags.Single(t => t.RemoteID == link.TagID).ID!.Value;
-                    
-                    context.TaskTagLinks.Add(new(taskID, tagID));
-                }
-
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return project.ID!.Value;
             }
 
             catch (DbUpdateException)

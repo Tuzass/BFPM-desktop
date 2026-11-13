@@ -4,6 +4,7 @@ using System.Net.Http;
 using BFPM.CLI.Exceptions;
 using Services;
 using Services.Exceptions;
+using Infrastructure.Database;
 
 namespace BFPM.CLI.Pages;
 
@@ -34,16 +35,36 @@ Type 'help' to see the available commands";
                 
                 if (!await apiClient.LoginWithPersistentToken(currentUser.ID))
                 {
-                    Console.WriteLine("Login failed.");
+                    Console.WriteLine("Login failed. Please select another user before performing any operations.");
                 }
 
-                currentUser = await UserService.GetCurrentUser();
-            }
+                else
+                {
+                    currentUser = await UserService.GetCurrentUser();
+                    Console.WriteLine($"Currently logged in as: {currentUser.Username}");
 
-            // TODO: implement project syncing on login
-            // remote projects assigned to user must have a local copy => download missing ones
-            // local projects associated to remote projects that don't exist anymore must be deleted => offer user to create a local copy before deleting it
-            Console.WriteLine($"Currently logged in as: {currentUser.Username}");
+                    using (var context = AppDbContextFactory.CreateContext())
+                    {
+                        var orphanProjectIDs = await SynchronizationService.StartupSynchronization(context, apiClient, currentUser.ID);
+
+                        foreach (var projectID in orphanProjectIDs)
+                        {
+                            var project = await DomainService.GetProjectByID(context, projectID);
+                            var answer = Utils.GetYesNoConfirmationCli($"Project '{project.Name}' (ID: {projectID}) was a local representation a remote project that has been deleted from the server. Its representation will now be deleted as well. Would you like to create a local copy of it?");
+
+                            if (answer)
+                            {
+                                int copyID = await DomainService.CopyProject(context, currentUser.ID, projectID);
+                                Console.WriteLine($"Project was successfully copied! Copy's ID: {copyID}.");
+                            }
+
+                            await DomainService.DeleteProject(context, projectID);
+                        }
+
+                        await context.SaveChangesAsync();
+                    }
+                }
+            }
         }
 
         catch (Exception e)
@@ -60,6 +81,10 @@ Type 'help' to see the available commands";
                     Console.WriteLine($"Currently logged in as: {currentUser.Username}");
                     Console.WriteLine("The server is currently unavailable.");
                     break;
+                
+                default:
+                    Console.WriteLine(e);
+                    throw;
             }
         }
 

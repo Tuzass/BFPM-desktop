@@ -185,7 +185,23 @@ public class ApiClient
         }
     }
 
-    public async Task SetCurrentUserID(int userID, CancellationToken ct = default)
+    private async Task<HttpResponseMessage> GetUserRemoteProjectsCore(int userID, CancellationToken ct = default)
+    {
+        using (var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"api/users/{userID}/projects"))
+        {
+            return await SendAuthenticated(httpRequest, ct);
+        }
+    }
+
+    private async Task<HttpResponseMessage> GetProjectBatchCore(GetProjectBatchRequest request, CancellationToken ct = default)
+    {
+        using (var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/projects/batch"){Content = JsonContent.Create(request)})
+        {
+            return await SendAuthenticated(httpRequest, ct);
+        }
+    }
+
+    public async Task SetCurrentUserID(int? userID, CancellationToken ct = default)
     {
         _currentUserID = userID;
         await UserService.SwitchCurrentUser(_currentUserID);
@@ -197,8 +213,7 @@ public class ApiClient
 
         try
         {
-            _currentUserID = null;
-            await UserService.SwitchCurrentUser(null);
+            await SetCurrentUserID(null, ct);
             await _tokenStore.ClearTokens();
             var request = new LoginRequest(username, password);
 
@@ -243,8 +258,7 @@ public class ApiClient
                 }
 
                 await UserService.StoreOrUpdate(userResponse.ID, userResponse.UserName, userResponse.Email);
-                _currentUserID = userResponse.ID;
-                await UserService.SwitchCurrentUser(userResponse.ID);
+                await SetCurrentUserID(userResponse.ID, ct);
 
                 var tokens = await _tokenStore.GetTokens();
                 if (tokens is not null && _tokenStore.PersistentStorageAvailable)
@@ -258,8 +272,7 @@ public class ApiClient
 
         catch (Exception)
         {
-            _currentUserID = null;
-            await UserService.SwitchCurrentUser(null);
+            await SetCurrentUserID(null, ct);
             await _tokenStore.ClearTokens();
             throw new ServerUnavailableException();
         }
@@ -279,15 +292,13 @@ public class ApiClient
             if (!await _tokenStore.LoadPersistedRefreshToken(userID))
             {
                 await _tokenStore.ClearTokens();
-                _currentUserID = null;
-                await UserService.SwitchCurrentUser(null);
+                await SetCurrentUserID(null, ct);
                 return false;
             }
 
             if (!await RefreshToken(ct))
             {
-                _currentUserID = null;
-                await UserService.SwitchCurrentUser(null);
+                await SetCurrentUserID(null, ct);
                 return false;
             }
 
@@ -297,8 +308,7 @@ public class ApiClient
                  || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
                     await _tokenStore.ClearTokens();
-                    _currentUserID = null;
-                    await UserService.SwitchCurrentUser(null);
+                    await SetCurrentUserID(null, ct);
                     return false;
                 }
 
@@ -314,13 +324,11 @@ public class ApiClient
                 if (userResponse is null)
                 {
                     await _tokenStore.ClearTokens();
-                    _currentUserID = null;
-                    await UserService.SwitchCurrentUser(null);
+                    await SetCurrentUserID(null, ct);
                     return false;
                 }
 
-                _currentUserID = userID;
-                await UserService.SwitchCurrentUser(userID);
+                await SetCurrentUserID(userID, ct);
                 await UserService.UpdateInformation(userResponse.ID, userResponse.UserName, userResponse.Email);
                 return true;
             }
@@ -329,8 +337,7 @@ public class ApiClient
         catch (Exception e) when (e is not OperationCanceledException)
         {
             await _tokenStore.ClearTokens();
-            _currentUserID = null;
-            await UserService.SwitchCurrentUser(null);
+            await SetCurrentUserID(null, ct);
 
             switch (e)
             {
@@ -362,8 +369,7 @@ public class ApiClient
                 await _tokenStore.ClearPersistedRefreshToken(_currentUserID.Value);
             }
 
-            _currentUserID = null;
-            await UserService.SwitchCurrentUser(null);
+            await SetCurrentUserID(null, ct);
         }
         
         finally
@@ -410,7 +416,7 @@ public class ApiClient
         }
     }
 
-    public async Task<ProjectResponse> GetProject(int projectID, CancellationToken ct = default)
+    public async Task<FullProjectResponse> GetProject(int projectID, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
@@ -431,7 +437,7 @@ public class ApiClient
                     throw new ServerUnavailableException();
                 }
 
-                var projectResponse = await response.Content.ReadFromJsonAsync<ProjectResponse>(cancellationToken: ct);
+                var projectResponse = await response.Content.ReadFromJsonAsync<FullProjectResponse>(cancellationToken: ct);
 
                 if (projectResponse is null)
                 {
@@ -674,7 +680,7 @@ public class ApiClient
         }
     }
 
-    public async Task<ProjectResponse> UploadProject(string name, string description, ProjectStatus status, List<TaskItem> tasks, List<Tag> tags, List<TaskTagLink> taskTagLinks, CancellationToken ct = default)
+    public async Task<FullProjectResponse> UploadProject(string name, string description, ProjectStatus status, List<TaskItem> tasks, List<Tag> tags, List<TaskTagLink> taskTagLinks, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
@@ -747,7 +753,7 @@ public class ApiClient
                     }
                 }
 
-                var projectResponse = await response.Content.ReadFromJsonAsync<ProjectResponse>(cancellationToken: ct);
+                var projectResponse = await response.Content.ReadFromJsonAsync<FullProjectResponse>(cancellationToken: ct);
 
                 if (projectResponse is null)
                 {
@@ -755,6 +761,84 @@ public class ApiClient
                 }
 
                 return projectResponse;
+            }
+        }
+        
+        finally
+        {
+            _refreshLock.Release();
+        }
+    }
+
+    public async Task<List<int>> GetUserRemoteProjectIDs(int userID, CancellationToken ct = default)
+    {
+        await _refreshLock.WaitAsync(ct);
+
+        try
+        {
+            using (var response = await GetUserRemoteProjectsCore(userID, ct))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    throw new Services.Exceptions.UnauthorizedAccessException();
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError
+                 || response.StatusCode == System.Net.HttpStatusCode.BadGateway
+                 || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    throw new ServerUnavailableException();
+                }
+
+                var projectIDs = await response.Content.ReadFromJsonAsync<List<int>>(cancellationToken: ct);
+
+                if (projectIDs is null)
+                {
+                    throw new InvalidOperationException("Project IDs not found in HTTP response");
+                }
+
+                return projectIDs;
+            }
+        }
+        
+        finally
+        {
+            _refreshLock.Release();
+        }
+    }
+
+    public async Task<List<FullProjectResponse>> GetProjectBatch(List<int> projectIDs, CancellationToken ct = default)
+    {
+        await _refreshLock.WaitAsync(ct);
+
+        try
+        {
+            // TODO: make sure each request contains at most 100 IDs
+            GetProjectBatchRequest request = new(projectIDs);
+            using (var response = await GetProjectBatchCore(request, ct))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    throw new Services.Exceptions.UnauthorizedAccessException();
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError
+                 || response.StatusCode == System.Net.HttpStatusCode.BadGateway
+                 || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    throw new ServerUnavailableException();
+                }
+
+                var projectResponses = await response.Content.ReadFromJsonAsync<List<FullProjectResponse>>(cancellationToken: ct);
+
+                if (projectResponses is null)
+                {
+                    throw new InvalidOperationException("Projects not found in HTTP response");
+                }
+
+                return projectResponses;
             }
         }
         

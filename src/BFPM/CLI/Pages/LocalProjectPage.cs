@@ -502,7 +502,7 @@ Left/Right | Moves cursor");
                     try
                     {
                         var remoteProject = await apiClient.UploadProject(project.Name, project.Description, project.Status, tasks, tags, taskTagLinks);
-                        int remoteCopyID = await DomainService.StoreRemoteProject(context, currentUser.ID, remoteProject);
+                        int remoteCopyID = await SynchronizationService.StoreRemoteProject(context, currentUser.ID, remoteProject);
                         await context.SaveChangesAsync();
 
                         Console.SetCursorPosition(2, 8);
