@@ -1,7 +1,10 @@
+using Domain.Entities;
+using Domain.Enums;
 using Infrastructure.Database;
 using Infrastructure.Entities;
 using Infrastructure.Enums;
 using Workflow.Enums;
+using Services.Exceptions;
 
 namespace Services;
 
@@ -61,5 +64,54 @@ public static class SynchronizationService
             "Rejected" => false,
             _ => throw new InvalidOperationException($"Unexpected user action status: {response}")
         };
+    }
+
+    public static async Task PullChanges(AppDbContext context, ApiClient apiClient, int userID, DomainEntityType entityType, int entityID)
+    {
+        switch (entityType)
+        {
+            case DomainEntityType.Project:
+                var project = await DomainService.GetProjectByID(context, entityID);
+                var projectResponse = await apiClient.GetProject(project.RemoteID!.Value);
+
+                Change change = new(userID, DomainEntityType.Project, entityID, null, null, null, null, null, false);
+                bool anyChanged = false;
+
+                if (project.Name != projectResponse.Name)
+                {
+                    change.Name = projectResponse.Name;
+                    anyChanged = true;
+                }
+
+                if (project.Description != projectResponse.Description)
+                {
+                    change.Description = projectResponse.Description;
+                    anyChanged = true;
+                }
+
+                if (project.Status != projectResponse.Status)
+                {
+                    change.Status = projectResponse.Status switch
+                    {
+                        ProjectStatus.Active => DomainEntityStatus.Active,
+                        ProjectStatus.OnHold => DomainEntityStatus.OnHold,
+                        ProjectStatus.Archived => DomainEntityStatus.Archived,
+                        ProjectStatus.Completed => DomainEntityStatus.Completed,
+                        _ => DomainEntityStatus.Active,
+                    };
+
+                    anyChanged = true;
+                }
+
+                if (anyChanged)
+                {
+                    await DomainService.ApplyChange(context, change);
+                }
+
+                break;
+
+            default:
+                throw new InvalidOperationException("Unexpected entity type.");
+        }
     }
 }

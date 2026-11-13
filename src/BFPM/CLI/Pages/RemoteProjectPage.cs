@@ -568,7 +568,9 @@ Left/Right | Moves cursor");
 
                 if (optionIndex == 2) // pull changes
                 {
-                    // TODO: implement
+                    await SynchronizationService.PullChanges(context, apiClient, currentUser.ID, DomainEntityType.Project, projectID);
+                    await context.SaveChangesAsync();
+                    PrintErrorMessage(errorMessageRow, "Changes were successfully pulled!");
                 }
 
                 if (optionIndex == optionCount - 2) // create copy
