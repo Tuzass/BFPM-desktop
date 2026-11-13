@@ -31,7 +31,7 @@ public class Parser
                 throw new UnexpectedTokenException();
             
             case TokenType.Delete:
-                return ParseDelete(tokens[1..]);
+                return ParseDelete(apiClient, tokens[1..]);
             
             case TokenType.Enter:
                 return ParseEnter(apiClient, tokens[1..]);
@@ -128,7 +128,7 @@ public class Parser
         throw new UnexpectedTokenException();
     }
 
-    public static ICommand ParseDelete(List<Token> tokens)
+    public static ICommand ParseDelete(ApiClient apiClient, List<Token> tokens)
     {
         if (tokens.Count < 3)
         {
@@ -156,7 +156,7 @@ public class Parser
                 throw new InvalidIdException();
             }
 
-            return new DeleteProjectCommand(projectID);
+            return new DeleteProjectCommand(apiClient, projectID);
         }
 
         if (tokens[0].Type == TokenType.Task
