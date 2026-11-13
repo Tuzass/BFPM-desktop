@@ -13,8 +13,4 @@ public class ProjectResponse
     public DateTime CreatedAt {get; set;}
     public DateTime? CompletedAt {get; set;}
     public int Version {get; set;}
-    public List<TaskResponse> Tasks {get; set;} = [];
-    public List<TagResponse> Tags {get; set;} = [];
-    public List<TaskTagLinkResponse> TaskTagLinks {get; set;} = [];
-    public List<UserAssignmentResponse> AssignedUsers {get; set;} = [];
 }
