@@ -13,9 +13,8 @@ public class Tag
         
     }
 
-    public Tag(int? id, int? remoteID, int projectID, string name, int? version = null)
+    public Tag(int? remoteID, int projectID, string name, int? version = null)
     {
-        ID = id;
         RemoteID = remoteID;
         ProjectID = projectID;
         Name = name;

@@ -236,7 +236,7 @@ Left/Right | Moves cursor within field");
                             Console.CursorVisible = true;
                             Console.Write("\x1b[?7h");
                             Console.Write("\x1b[?1049l");
-                            return new(null, null, currentUserID, currentUserID, fieldContents[0].Trim(), fieldContents[1].Trim(), ProjectStatus.Active, null, null, null);
+                            return new(null, currentUserID, currentUserID, fieldContents[0].Trim(), fieldContents[1].Trim(), ProjectStatus.Active, null, null, null);
                         }
                     }
 

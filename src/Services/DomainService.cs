@@ -322,7 +322,6 @@ public static class DomainService
             if (task.AssignedUsers.ContainsKey(userID))
             {
                 assignedTasks.Add(new(
-                    task.ID,
                     null,
                     task.ProjectID,
                     task.Name,
@@ -388,7 +387,7 @@ public static class DomainService
             throw new DuplicateFolderException();
         }
 
-        Folder newFolder = new(null, ownerID, folderName, folderDescription);
+        Folder newFolder = new(ownerID, folderName, folderDescription);
         context.Folders.Add(newFolder);
     }
 
@@ -402,7 +401,7 @@ public static class DomainService
             throw new DuplicateProjectException();
         }
 
-        Project newProject = new(null, null, ownerID, ownerID, projectName, projectDescription, projectStatus, null, null);
+        Project newProject = new(null, ownerID, ownerID, projectName, projectDescription, projectStatus, null, null);
         context.Projects.Add(newProject);
     }
 
@@ -416,7 +415,7 @@ public static class DomainService
             throw new DuplicateTaskException();
         }
 
-        TaskItem newTask = new(null, null, projectID, taskName, taskDescription, taskStatus, taskPriority, taskDueDate, null, null);
+        TaskItem newTask = new(null, projectID, taskName, taskDescription, taskStatus, taskPriority, taskDueDate, null, null);
         context.Tasks.Add(newTask);
     }
 
@@ -430,7 +429,7 @@ public static class DomainService
             throw new DuplicateTagException();
         }
 
-        Tag newTag = new(null, null, projectID, tagName);
+        Tag newTag = new(null, projectID, tagName);
         context.Tags.Add(newTag);
     }
 
@@ -758,7 +757,7 @@ public static class DomainService
                     newName += " - Copy";
                 }
 
-                Project newProject = new(null, null, newOwnerID, newOwnerID, newName, project.Description, project.Status, null, null);
+                Project newProject = new(null, newOwnerID, newOwnerID, newName, project.Description, project.Status, null, null);
 
                 if (project.Status == ProjectStatus.Completed)
                 {
@@ -774,7 +773,7 @@ public static class DomainService
 
                 foreach (var t in tasks)
                 {
-                    TaskItem newTask = new(null, null, newProject.ID!.Value, t.Name, t.Description, t.Status, t.Priority, t.DueDate, null, null);
+                    TaskItem newTask = new(null, newProject.ID!.Value, t.Name, t.Description, t.Status, t.Priority, t.DueDate, null, null);
 
                     if (t.Status == TaskItemStatus.Completed)
                     {
@@ -791,7 +790,7 @@ public static class DomainService
 
                 foreach (var t in tags)
                 {
-                    Tag newTag = new(null, null, newProject.ID!.Value, t.Name);
+                    Tag newTag = new(null, newProject.ID!.Value, t.Name);
                     newTags.Add(newTag);
                     newTagsByOldID.Add(t.ID!.Value, newTag);
                 }
@@ -833,7 +832,7 @@ public static class DomainService
         {
             try
             {
-                Project project = new(null, remoteProject.ID, remoteProject.OwnerID, assignedUserID, remoteProject.Name, remoteProject.Description, remoteProject.Status, remoteProject.CreatedAt, remoteProject.CompletedAt, remoteProject.Version);
+                Project project = new(remoteProject.ID, remoteProject.OwnerID, assignedUserID, remoteProject.Name, remoteProject.Description, remoteProject.Status, remoteProject.CreatedAt, remoteProject.CompletedAt, remoteProject.Version);
 
                 if (project.Status == ProjectStatus.Completed)
                 {
@@ -846,13 +845,13 @@ public static class DomainService
                 List<TaskItem> tasks = [];
                 foreach (var task in remoteProject.Tasks)
                 {
-                    tasks.Add(new(null, task.ID, task.ProjectID, task.Name, task.Description, task.Status, task.Priority, task.DueDate, task.CreatedAt, task.CompletedAt, task.Version));
+                    tasks.Add(new(task.ID, task.ProjectID, task.Name, task.Description, task.Status, task.Priority, task.DueDate, task.CreatedAt, task.CompletedAt, task.Version));
                 }
 
                 List<Tag> tags = [];
                 foreach (var tag in remoteProject.Tags)
                 {
-                    tags.Add(new(null, tag.ID, tag.ProjectID, tag.Name, tag.Version));
+                    tags.Add(new(tag.ID, tag.ProjectID, tag.Name, tag.Version));
                 }
 
                 context.Tasks.AddRange(tasks);

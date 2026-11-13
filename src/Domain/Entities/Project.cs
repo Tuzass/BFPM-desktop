@@ -21,9 +21,8 @@ public class Project
         
     }
 
-    public Project(int? id, int? remoteID, int ownerID, int assignedUserID, string name, string description, ProjectStatus status, DateTime? createdAt, DateTime? completedAt, int? version = null)
+    public Project(int? remoteID, int ownerID, int assignedUserID, string name, string description, ProjectStatus status, DateTime? createdAt, DateTime? completedAt, int? version = null)
     {
-        ID = id;
         RemoteID = remoteID;
         OwnerID = ownerID;
         AssignedUserID = assignedUserID;
@@ -33,16 +32,7 @@ public class Project
         EnableLocalNotifications = true;
         CreatedAt = (createdAt == null) ? DateTime.UtcNow : (DateTime)createdAt;
         CompletedAt = completedAt;
-
-        if (version is null)
-        {
-            Version = 1;
-        }
-
-        else
-        {
-            Version = version.Value;
-        }
+        Version = version is null ? 1 : version.Value;
     }
 
     public void IncreaseVersion()
