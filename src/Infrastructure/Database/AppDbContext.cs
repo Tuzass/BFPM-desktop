@@ -69,13 +69,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasFilter("RemoteID IS NULL");
 
         modelBuilder.Entity<Project>()
-            .HasIndex(p => new {p.OwnerID, p.Name})
-            .IsUnique()
-            .HasFilter("RemoteID IS NOT NULL");
-
-        modelBuilder.Entity<Project>()
             .HasIndex(p => new {p.RemoteID, p.AssignedUserID})
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("RemoteID IS NULL");
         
         modelBuilder.Entity<TaskItem>()
             .Property(t => t.ID)

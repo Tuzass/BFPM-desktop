@@ -89,10 +89,11 @@ namespace Infrastructure.Migrations
 
                     b.HasIndex("OwnerID", "Name")
                         .IsUnique()
-                        .HasFilter("RemoteID IS NOT NULL");
+                        .HasFilter("RemoteID IS NULL");
 
                     b.HasIndex("RemoteID", "AssignedUserID")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("RemoteID IS NULL");
 
                     b.ToTable("Projects");
                 });
