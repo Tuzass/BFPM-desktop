@@ -674,7 +674,7 @@ public class ApiClient
         }
     }
 
-    public async Task<int> UploadProject(string name, string description, ProjectStatus status, List<TaskItem> tasks, List<Tag> tags, List<TaskTagLink> taskTagLinks, CancellationToken ct = default)
+    public async Task<ProjectResponse> UploadProject(string name, string description, ProjectStatus status, List<TaskItem> tasks, List<Tag> tags, List<TaskTagLink> taskTagLinks, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
 
@@ -747,14 +747,14 @@ public class ApiClient
                     }
                 }
 
-                var result = await response.Content.ReadFromJsonAsync<UploadProjectResponse>(cancellationToken: ct);
+                var projectResponse = await response.Content.ReadFromJsonAsync<ProjectResponse>(cancellationToken: ct);
 
-                if (result is null)
+                if (projectResponse is null)
                 {
-                    throw new InvalidOperationException("Project ID not found in HTTP response");
+                    throw new InvalidOperationException("Project not found in HTTP response");
                 }
 
-                return result.ID;
+                return projectResponse;
             }
         }
         

@@ -501,8 +501,8 @@ Left/Right | Moves cursor");
 
                     try
                     {
-                        int remoteID = await apiClient.UploadProject(project.Name, project.Description, project.Status, tasks, tags, taskTagLinks);
-                        int remoteCopyID = await DomainService.CopyProject(context, currentUser.ID, projectID, null, remoteID);
+                        var remoteProject = await apiClient.UploadProject(project.Name, project.Description, project.Status, tasks, tags, taskTagLinks);
+                        int remoteCopyID = await DomainService.StoreRemoteProject(context, currentUser.ID, remoteProject);
                         await context.SaveChangesAsync();
 
                         Console.SetCursorPosition(2, 8);
@@ -612,7 +612,7 @@ Left/Right | Moves cursor");
                                     Console.SetCursorPosition(0, 3);
                                     Console.Write(new string(' ', 200));
 
-                                    int copyID = await DomainService.CopyProject(context, currentUser.ID, project.ID!.Value, newName.Trim(), null);
+                                    int copyID = await DomainService.CopyProject(context, currentUser.ID, project.ID!.Value, newName.Trim());
                                     await context.SaveChangesAsync();
 
                                     PrintErrorMessage(errorMessageRow, $"Project was successfully copied! Copy's ID: {copyID}.");

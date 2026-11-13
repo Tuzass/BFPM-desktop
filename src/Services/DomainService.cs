@@ -5,6 +5,7 @@ using Infrastructure.Entities;
 using Infrastructure.Enums;
 using Services.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using API.Responses;
 
 namespace Services;
 
@@ -72,20 +73,20 @@ public static class DomainService
             .AnyAsync(t => t.ID != tagID && t.ProjectID == projectID && t.Name == tagName);
     }
 
-    public static async Task<int> GetEntityVersion(AppDbContext context, DomainEntityType entityType, int entityID)
+    public static async Task<int> GetEntityVersionByRemoteID(AppDbContext context, DomainEntityType entityType, int remoteEntityID)
     {
         switch (entityType)
         {
             case DomainEntityType.Project:
-                var project = await GetProjectByID(context, entityID);
+                var project = await GetProjectByRemoteID(context, remoteEntityID);
                 return project.Version;
             
             case DomainEntityType.Task:
-                var task = await GetTaskByID(context, entityID);
+                var task = await GetTaskByRemoteID(context, remoteEntityID);
                 return task.Version;
             
             case DomainEntityType.Tag:
-                var tag = await GetTagByID(context, entityID);
+                var tag = await GetTagByRemoteID(context, remoteEntityID);
                 return tag.Version;
             
             default:
@@ -121,6 +122,20 @@ public static class DomainService
         return project;
     }
 
+    public static async Task<Project> GetProjectByRemoteID(AppDbContext context, int remoteProjectID)
+    {
+        var project = await context.Projects
+            .Where(p => p.RemoteID == remoteProjectID)
+            .SingleOrDefaultAsync();
+        
+        if (project is null)
+        {
+            throw new InexistentProjectException();
+        }
+
+        return project;
+    }
+
     public static async Task<TaskItem> GetTaskByID(AppDbContext context, int taskID)
     {  
         var task = await context.Tasks
@@ -135,10 +150,38 @@ public static class DomainService
         return task;
     }
 
+    public static async Task<TaskItem> GetTaskByRemoteID(AppDbContext context, int remoteTaskID)
+    {
+        var task = await context.Tasks
+            .Where(p => p.RemoteID == remoteTaskID)
+            .SingleOrDefaultAsync();
+        
+        if (task is null)
+        {
+            throw new InexistentTaskException();
+        }
+
+        return task;
+    }
+
     public static async Task<Tag> GetTagByID(AppDbContext context, int tagID)
     {  
         var tag = await context.Tags
             .Where(t => t.ID == tagID)
+            .SingleOrDefaultAsync();
+        
+        if (tag is null)
+        {
+            throw new InexistentTagException();
+        }
+
+        return tag;
+    }
+
+    public static async Task<Tag> GetTagByRemoteID(AppDbContext context, int remoteTagID)
+    {
+        var tag = await context.Tags
+            .Where(p => p.RemoteID == remoteTagID)
             .SingleOrDefaultAsync();
         
         if (tag is null)
@@ -192,6 +235,13 @@ public static class DomainService
         return await context.Folders
             .Where(f => f.OwnerID == userID)
             .ToListAsync();
+    }
+
+    public static async Task<Project?> GetProjectByName(AppDbContext context, int assignedUserID, string projectName)
+    {
+        return await context.Projects
+            .Where(p => p.AssignedUserID == assignedUserID && p.Name == projectName)
+            .SingleOrDefaultAsync();
     }
 
     public static async Task<List<Project>> GetProjectsAssignedToUser(AppDbContext context, int userID)
@@ -330,7 +380,7 @@ public static class DomainService
 
     public static async Task CreateFolder(AppDbContext context, int ownerID, string folderName, string folderDescription)
     {
-        bool isDuplicate = await context.Folders
+        var isDuplicate = await context.Folders
             .AnyAsync(f => f.OwnerID == ownerID && f.Name == folderName);
         
         if (isDuplicate)
@@ -344,7 +394,7 @@ public static class DomainService
 
     public static async Task CreateProject(AppDbContext context, int ownerID, string projectName, string projectDescription, ProjectStatus projectStatus)
     {
-        bool isDuplicate = await context.Projects
+        var isDuplicate = await context.Projects
             .AnyAsync(p => p.OwnerID == ownerID && p.Name == projectName);
         
         if (isDuplicate)
@@ -358,7 +408,7 @@ public static class DomainService
 
     public static async Task CreateTask(AppDbContext context, int projectID, string taskName, string taskDescription, TaskItemStatus taskStatus, TaskItemPriority taskPriority, DateTime? taskDueDate)
     {
-        bool isDuplicate = await context.Tasks
+        var isDuplicate = await context.Tasks
             .AnyAsync(t => t.ProjectID == projectID && t.Name == taskName);
         
         if (isDuplicate)
@@ -372,7 +422,7 @@ public static class DomainService
 
     public static async Task CreateTag(AppDbContext context, int projectID, string tagName)
     {
-        bool isDuplicate = await context.Tags
+        var isDuplicate = await context.Tags
             .AnyAsync(t => t.ProjectID == projectID && t.Name == tagName);
         
         if (isDuplicate)
@@ -386,7 +436,7 @@ public static class DomainService
 
     public static async Task AssignProjectToFolder(AppDbContext context, int folderID, int projectID)
     {
-        bool isDuplicate = await context.FolderProjectLinks
+        var isDuplicate = await context.FolderProjectLinks
             .AnyAsync(l => l.FolderID == folderID && l.ProjectID == projectID);
         
         if (!isDuplicate)
@@ -398,7 +448,7 @@ public static class DomainService
 
     public static async Task RemoveProjectFromFolder(AppDbContext context, int folderID, int projectID)
     {
-        bool linkExists = await context.FolderProjectLinks
+        var linkExists = await context.FolderProjectLinks
             .AnyAsync(l => l.FolderID == folderID && l.ProjectID == projectID);
         
         if (linkExists)
@@ -410,7 +460,7 @@ public static class DomainService
 
     public static async Task AssignTagToTask(AppDbContext context, int taskID, int tagID)
     {
-        bool isDuplicate = await context.TaskTagLinks
+        var isDuplicate = await context.TaskTagLinks
             .AnyAsync(l => l.TaskID == taskID && l.TagID == tagID);
 
         if (isDuplicate)
@@ -424,7 +474,7 @@ public static class DomainService
 
     public static async Task RemoveTagFromTask(AppDbContext context, int taskID, int tagID)
     {
-        bool linkExists = await context.TaskTagLinks
+        var linkExists = await context.TaskTagLinks
             .AnyAsync(l => l.TaskID == taskID && l.TagID == tagID);
         
         if (!linkExists)
@@ -617,7 +667,7 @@ public static class DomainService
 
     public static async Task DeleteFolder(AppDbContext context, int folderID)
     {
-        bool folderExists = await context.Folders
+        var folderExists = await context.Folders
             .AnyAsync(f => f.ID == folderID);
         
         if (!folderExists)
@@ -634,7 +684,7 @@ public static class DomainService
 
     public static async Task DeleteProject(AppDbContext context, int projectID)
     {
-        bool projectExists = await context.Projects
+        var projectExists = await context.Projects
             .AnyAsync(f => f.ID == projectID);
         
         if (!projectExists)
@@ -651,7 +701,7 @@ public static class DomainService
 
     public static async Task DeleteTask(AppDbContext context, int taskID)
     {
-        bool taskExists = await context.Tasks
+        var taskExists = await context.Tasks
             .AnyAsync(f => f.ID == taskID);
         
         if (!taskExists)
@@ -668,7 +718,7 @@ public static class DomainService
 
     public static async Task DeleteTag(AppDbContext context, int tagID)
     {
-        bool tagExists = await context.Tags
+        var tagExists = await context.Tags
             .AnyAsync(f => f.ID == tagID);
         
         if (!tagExists)
@@ -683,7 +733,7 @@ public static class DomainService
         context.Tags.Remove(tag);
     }
 
-    public static async Task<int> CopyProject(AppDbContext context, int newOwnerID, int projectID, string? newName = null, int? remoteID = null)
+    public static async Task<int> CopyProject(AppDbContext context, int newOwnerID, int projectID, string? newName = null)
     {
         using (var transaction = await context.Database.BeginTransactionAsync())
         {
@@ -694,21 +744,21 @@ public static class DomainService
                 if (newName is null)
                 {
                     newName = project.Name;
-
-                    while (remoteID is null)
-                    {
-                        bool isDuplicate = await IsProjectNameDuplicate(context, newOwnerID, newName);
-
-                        if (!isDuplicate)
-                        {
-                            break;
-                        }
-
-                        newName += " - Copy";
-                    }
                 }
 
-                Project newProject = new(null, remoteID, newOwnerID, newOwnerID, newName, project.Description, project.Status, null, null);
+                while (true)
+                {
+                    var isDuplicate = await IsProjectNameDuplicate(context, newOwnerID, newName);
+
+                    if (!isDuplicate)
+                    {
+                        break;
+                    }
+
+                    newName += " - Copy";
+                }
+
+                Project newProject = new(null, null, newOwnerID, newOwnerID, newName, project.Description, project.Status, null, null);
 
                 if (project.Status == ProjectStatus.Completed)
                 {
@@ -767,6 +817,59 @@ public static class DomainService
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return newProject.ID!.Value;
+            }
+
+            catch (DbUpdateException)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+    }
+
+    public static async Task<int> StoreRemoteProject(AppDbContext context, int assignedUserID, ProjectResponse remoteProject)
+    {
+        using (var transaction = await context.Database.BeginTransactionAsync())
+        {
+            try
+            {
+                Project project = new(null, remoteProject.ID, remoteProject.OwnerID, assignedUserID, remoteProject.Name, remoteProject.Description, remoteProject.Status, remoteProject.CreatedAt, remoteProject.CompletedAt, remoteProject.Version);
+
+                if (project.Status == ProjectStatus.Completed)
+                {
+                    project.Complete();
+                }
+
+                context.Projects.Add(project);
+                await context.SaveChangesAsync();
+
+                List<TaskItem> tasks = [];
+                foreach (var task in remoteProject.Tasks)
+                {
+                    tasks.Add(new(null, task.ID, task.ProjectID, task.Name, task.Description, task.Status, task.Priority, task.DueDate, task.CreatedAt, task.CompletedAt, task.Version));
+                }
+
+                List<Tag> tags = [];
+                foreach (var tag in remoteProject.Tags)
+                {
+                    tags.Add(new(null, tag.ID, tag.ProjectID, tag.Name, tag.Version));
+                }
+
+                context.Tasks.AddRange(tasks);
+                context.Tags.AddRange(tags);
+                await context.SaveChangesAsync();
+                
+                foreach (var link in remoteProject.TaskTagLinks)
+                {
+                    int taskID = tasks.Single(t => t.RemoteID == link.TaskID).ID!.Value;
+                    int tagID = tags.Single(t => t.RemoteID == link.TagID).ID!.Value;
+                    
+                    context.TaskTagLinks.Add(new(taskID, tagID));
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return project.ID!.Value;
             }
 
             catch (DbUpdateException)

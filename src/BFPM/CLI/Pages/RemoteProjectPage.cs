@@ -409,10 +409,6 @@ Left/Right | Moves cursor");
                                     await DomainService.StoreOrReplaceChange(context, change);
                                     await context.SaveChangesAsync();
 
-                                    // TODO: add RemoteID to tasks and tags
-                                    // when uploading a project, retrieve it and save IDs as RemoteIDs
-                                    // DomainService and Change work with IDs, SynchronizationService works with RemoteIDs
-
                                     PrintErrorMessage(errorMessageRow, "Changes were saved. Select 'Commit changes' to submit them to the remote project.");
                                     logs.Add("Changes were saved.");
 
@@ -653,7 +649,7 @@ Left/Right | Moves cursor");
                                     Console.SetCursorPosition(0, 3);
                                     Console.Write(new string(' ', 200));
 
-                                    int copyID = await DomainService.CopyProject(context, currentUser.ID, project.ID!.Value, newName.Trim(), null);
+                                    int copyID = await DomainService.CopyProject(context, currentUser.ID, project.ID!.Value, newName.Trim());
                                     await context.SaveChangesAsync();
 
                                     PrintErrorMessage(errorMessageRow, $"Project was successfully copied! Copy's ID: {copyID}.");

@@ -21,7 +21,7 @@ public static class SynchronizationService
         Dictionary<EntityIdPair, int> entityVersions = [];
         foreach (var pair in affectedEntitiesResponse.AffectedEntities)
         {
-            int version = await DomainService.GetEntityVersion(context, pair.EntityType, pair.ID);
+            int version = await DomainService.GetEntityVersionByRemoteID(context, pair.EntityType, pair.ID);
 
             if (version == -1)
             {
