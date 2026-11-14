@@ -5,6 +5,7 @@ using Infrastructure.Entities;
 using Infrastructure.Enums;
 using Workflow.Enums;
 using Services.Exceptions;
+using API.Enums;
 using API.Auth;
 using API.Requests;
 using API.Responses;
@@ -13,6 +14,7 @@ namespace Services;
 
 public class ApiClient
 {
+    public ServerStatus ConnectionStatus {get; private set;} = ServerStatus.Unknown;
     private int? _currentUserID;
     private readonly TokenStore _tokenStore = null!;
     private readonly HttpClient _httpClient = null!;
@@ -51,27 +53,30 @@ public class ApiClient
             return false;
         }
 
-        var request = new RefreshRequest(tokens.RefreshToken);
+        var refreshRequest = new RefreshRequest(tokens.RefreshToken);
 
-        using (var response = await _httpClient.PostAsJsonAsync("api/auth/refresh", request, ct))
+        using (var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/auth/refresh"){Content = JsonContent.Create(refreshRequest)})
         {
-            if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
-                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            using (var response = await SendAndTrack(httpRequest, ct))
             {
-                await _tokenStore.ClearTokens();
-                return false;
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                    || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    await _tokenStore.ClearPersistedRefreshToken(_currentUserID!.Value);
+                    await _tokenStore.ClearTokens();
+                    return false;
+                }
+
+                var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: ct);
+
+                if (tokenResponse is null)
+                {
+                    throw new InvalidOperationException("The tokens could not be refreshed");
+                }
+
+                await SaveTokenResponse(tokenResponse);
+                return true;
             }
-
-            var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: ct);
-
-            if (tokenResponse is null)
-            {
-                await _tokenStore.ClearTokens();
-                return false;
-            }
-
-            await SaveTokenResponse(tokenResponse);
-            return true;
         }
     }
 
@@ -103,21 +108,54 @@ public class ApiClient
         return tokens.AccessToken;
     }
 
+    private async Task<HttpResponseMessage> SendAndTrack(HttpRequestMessage request, CancellationToken ct = default)
+    {
+        try
+        {
+            var response = await _httpClient.SendAsync(request, ct);
+            ConnectionStatus = ServerStatus.Online;
+            return response;
+        }
+
+        catch (HttpRequestException)
+        {
+            ConnectionStatus = ServerStatus.Offline;
+            throw new ServerUnavailableException();
+        }
+
+        catch (TaskCanceledException) when (!ct.IsCancellationRequested)
+        {
+            ConnectionStatus = ServerStatus.Offline;
+            throw new ServerUnavailableException();
+        }
+    }
+
     private async Task<HttpResponseMessage> SendAuthenticated(HttpRequestMessage request, CancellationToken ct = default)
     {
+        if (ConnectionStatus == ServerStatus.Offline && !await CheckServerAvailability(ct))
+        {
+            throw new ServerUnavailableException();
+        }
+
         var accessToken = await GetAccessToken(ct);
 
         if (accessToken is null)
         {
-            if (_currentUserID is null
-             || !await LoginWithPersistentToken(_currentUserID.Value, ct))
+            if (_currentUserID is null || !await LoginWithPersistentTokenCore(_currentUserID.Value, ct))
             {
                 throw new InvalidOperationException("User is not authenticated");
+            }
+
+            accessToken = await GetAccessToken(ct);
+            
+            if (accessToken is null)
+            {
+                throw new InvalidOperationException("Access token could not be obtained");
             }
         }
 
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        return await _httpClient.SendAsync(request, ct);
+        return await SendAndTrack(request, ct);
     }
 
     private async Task<HttpResponseMessage> GetCurrentUserCore(CancellationToken ct = default)
@@ -162,11 +200,10 @@ public class ApiClient
 
     private async Task<HttpResponseMessage> RegisterCore(RegisterRequest request, CancellationToken ct = default)
     {
-        return await _httpClient.PostAsJsonAsync(
-            "api/users",
-            request,
-            ct
-        );
+        using (var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/user"){Content = JsonContent.Create(request)})
+        {
+            return await SendAndTrack(httpRequest, ct);
+        }
     }
 
     private async Task<HttpResponseMessage> SendVersionsCore(int userActionID, SendVersionsRequest request, CancellationToken ct = default)
@@ -201,10 +238,93 @@ public class ApiClient
         }
     }
 
+    private async Task<bool> LoginWithPersistentTokenCore(int userID, CancellationToken ct)
+    {
+        try
+        {
+            if (!await _tokenStore.LoadPersistedRefreshToken(userID))
+            {
+                await _tokenStore.ClearTokens();
+                await SetCurrentUserID(null, ct);
+                return false;
+            }
+
+            if (!await RefreshToken(ct))
+            {
+                await SetCurrentUserID(null, ct);
+                return false;
+            }
+
+            using (var response = await GetCurrentUserCore(ct))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    await _tokenStore.ClearPersistedRefreshToken(userID);
+                    await _tokenStore.ClearTokens();
+                    await SetCurrentUserID(null, ct);
+                    return false;
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError
+                 || response.StatusCode == System.Net.HttpStatusCode.BadGateway
+                 || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+                {
+                    throw new ServerUnavailableException();
+                }
+
+                var userResponse = await response.Content.ReadFromJsonAsync<UserResponse>(cancellationToken: ct);
+
+                if (userResponse is null)
+                {
+                    await _tokenStore.ClearTokens();
+                    await SetCurrentUserID(null, ct);
+                    return false;
+                }
+
+                await SetCurrentUserID(userID, ct);
+                await UserService.UpdateInformation(userResponse.ID, userResponse.UserName, userResponse.Email);
+                return true;
+            }
+        }
+
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            switch (e)
+            {
+                case ServerUnavailableException:
+                case HttpRequestException:
+                    throw;
+                
+                default:
+                    await _tokenStore.ClearTokens();
+                    await SetCurrentUserID(null, ct);
+                    throw new InvalidOperationException("An unexpected error occurred during login.");
+            }
+        }
+    }
+
     public async Task SetCurrentUserID(int? userID, CancellationToken ct = default)
     {
         _currentUserID = userID;
         await UserService.SwitchCurrentUser(_currentUserID);
+    }
+
+    public async Task<bool> CheckServerAvailability(CancellationToken ct = default)
+    {
+        using (var request = new HttpRequestMessage(HttpMethod.Get, "api/health"))
+        {
+            try
+            {
+                using var response = await SendAndTrack(request, ct);
+                return response.IsSuccessStatusCode;
+            }
+
+            catch (ServerUnavailableException)
+            {
+                return false;
+            }
+        }
     }
 
     public async Task<bool> LoginWithCredentials(string username, string password, CancellationToken ct = default)
@@ -215,29 +335,32 @@ public class ApiClient
         {
             await SetCurrentUserID(null, ct);
             await _tokenStore.ClearTokens();
-            var request = new LoginRequest(username, password);
+            var loginRequest = new LoginRequest(username, password);
 
-            using (var response = await _httpClient.PostAsJsonAsync("api/auth/login?useCookies=false", request, ct))
+            using (var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/auth/login?useCookies=false"){Content = JsonContent.Create(loginRequest)})
             {
-                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
-                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                using (var response = await SendAndTrack(httpRequest, ct))
                 {
-                    return false;
+                    if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
+                    || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    {
+                        return false;
+                    }
+
+                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        throw new InexistentUserException();
+                    }
+
+                    var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: ct);
+
+                    if (tokenResponse is null)
+                    {
+                        return false;
+                    }
+
+                    await SaveTokenResponse(tokenResponse);
                 }
-
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                {
-                    throw new InexistentUserException();
-                }
-
-                var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>(cancellationToken: ct);
-
-                if (tokenResponse is null)
-                {
-                    return false;
-                }
-
-                await SaveTokenResponse(tokenResponse);
             }
 
             using (var response = await GetCurrentUserCore(ct))
@@ -274,7 +397,7 @@ public class ApiClient
         {
             await SetCurrentUserID(null, ct);
             await _tokenStore.ClearTokens();
-            throw new ServerUnavailableException();
+            throw;
         }
 
         finally
@@ -289,65 +412,7 @@ public class ApiClient
 
         try
         {
-            if (!await _tokenStore.LoadPersistedRefreshToken(userID))
-            {
-                await _tokenStore.ClearTokens();
-                await SetCurrentUserID(null, ct);
-                return false;
-            }
-
-            if (!await RefreshToken(ct))
-            {
-                await SetCurrentUserID(null, ct);
-                return false;
-            }
-
-            using (var response = await GetCurrentUserCore(ct))
-            {
-                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest
-                 || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                {
-                    await _tokenStore.ClearTokens();
-                    await SetCurrentUserID(null, ct);
-                    return false;
-                }
-
-                if (response.StatusCode == System.Net.HttpStatusCode.InternalServerError
-                 || response.StatusCode == System.Net.HttpStatusCode.BadGateway
-                 || response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
-                {
-                    throw new ServerUnavailableException();
-                }
-
-                var userResponse = await response.Content.ReadFromJsonAsync<UserResponse>(cancellationToken: ct);
-
-                if (userResponse is null)
-                {
-                    await _tokenStore.ClearTokens();
-                    await SetCurrentUserID(null, ct);
-                    return false;
-                }
-
-                await SetCurrentUserID(userID, ct);
-                await UserService.UpdateInformation(userResponse.ID, userResponse.UserName, userResponse.Email);
-                return true;
-            }
-        }
-
-        catch (Exception e) when (e is not OperationCanceledException)
-        {
-            await _tokenStore.ClearTokens();
-            await SetCurrentUserID(null, ct);
-
-            switch (e)
-            {
-                case ServerUnavailableException:
-                case HttpRequestException:
-                    throw new ServerUnavailableException();
-                
-                default:
-                    throw new InvalidOperationException("An unexpected error occurred during login.");
-            }
+            return await LoginWithPersistentTokenCore(userID, ct);
         }
 
         finally
