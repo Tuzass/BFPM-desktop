@@ -876,10 +876,10 @@ public class ApiClient
     public async Task<List<FullProjectResponse>> GetProjectBatch(List<int> projectIDs, CancellationToken ct = default)
     {
         await _refreshLock.WaitAsync(ct);
+        List<List<int>> batches = projectIDs.Chunk(100).Select(c => c.ToList()).ToList();
 
         try
         {
-            // TODO: make sure each request contains at most 100 IDs
             GetProjectBatchRequest request = new(projectIDs);
             using (var response = await GetProjectBatchCore(request, ct))
             {
