@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Infrastructure.Database;
 using Services;
@@ -7,16 +8,18 @@ using BFPM.CLI.Pages;
 
 namespace BFPM.CLI.Commands;
 
-public class EditTaskCommand : ICommand
+public class EnterTaskCommand : ICommand
 {
+    private readonly ApiClient _apiClient = null!;
     public int TaskID {get; private set;}
 
-    public EditTaskCommand(int taskID)
+    public EnterTaskCommand(ApiClient apiClient, int taskID)
     {
+        _apiClient = apiClient;
         TaskID = taskID;
     }
 
-    private EditTaskCommand()
+    private EnterTaskCommand()
     {
         
     }
@@ -31,25 +34,25 @@ public class EditTaskCommand : ICommand
 
             if (!await DomainService.IsProjectAssignedToUser(context, currentUser.ID, task.ProjectID))
             {
-                throw new UnauthorizedAccessException();
+                throw new Services.Exceptions.UnauthorizedAccessException();
             }
 
-            if (!await DomainService.IsProjectLocal(context, task.ProjectID))
+            List<string> logs = [];
+
+            if (await DomainService.IsProjectLocal(context, task.ProjectID))
             {
-                throw new NonlocalProjectException();
+                logs = await LocalTaskPage.Run(context, _apiClient, TaskID);
             }
 
-            var localChange = await TaskEditPage.Run(context, TaskID);
-
-            if (localChange is null)
+            else
             {
-                return;
+                logs = await RemoteTaskPage.Run(context, _apiClient, TaskID);
             }
 
-            await DomainService.ApplyChange(context, localChange);
-            await context.SaveChangesAsync();
-
-            Console.WriteLine($"Task {TaskID} changed\nName: {localChange.Name}, Description: {localChange.Description}, Status: {localChange.Status}, Priority: {localChange.Priority}");
+            foreach (var log in logs)
+            {
+                Console.WriteLine(log);
+            }
         }
     }
 }

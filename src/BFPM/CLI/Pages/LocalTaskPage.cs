@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading.Tasks;
-using Domain.Entities;
 using Domain.Enums;
 using Infrastructure.Database;
 using Infrastructure.Entities;
@@ -11,9 +10,9 @@ using Services;
 
 namespace BFPM.CLI.Pages;
 
-public class TaskEditPage
+public class LocalTaskPage
 {
-    public TaskEditPage()
+    public LocalTaskPage()
     {
         
     }
@@ -231,7 +230,7 @@ Left/Right | Moves cursor within field");
                         continue;
                     }
 
-                    if (await DomainService.IsTaskDuplicate(context, task.ProjectID, fieldContents[0].Trim()))
+                    if (await DomainService.IsTaskNameDuplicate(context, task.ProjectID, fieldContents[0].Trim()))
                     {
                         PrintErrorMessage($"Current user already has a task named '{fieldContents[0].Trim()}' (case-insensitive)!");
                         continue;

@@ -214,7 +214,7 @@ public class Parser
                 throw new InvalidIdException();
             }
 
-            return new EditFolderCommand(folderID); // TODO: change to EnterFolderCommand
+            return new EnterFolderCommand(folderID);
         }
 
         if (tokens[0].Type == TokenType.Project
@@ -238,7 +238,7 @@ public class Parser
                 throw new InvalidIdException();
             }
 
-            return new EditTaskCommand(taskID); // TODO: change to EnterTaskCommand
+            return new EnterTaskCommand(apiClient, taskID);
         }
 
         if (tokens[0].Type == TokenType.Tag
@@ -250,7 +250,7 @@ public class Parser
                 throw new InvalidIdException();
             }
 
-            return new EditTagCommand(tagID); // TODO: change to EnterTagCommand
+            return new EnterTagCommand(apiClient, tagID);
         }
 
         throw new UnexpectedTokenException();

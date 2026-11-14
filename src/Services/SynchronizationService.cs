@@ -115,6 +115,90 @@ public static class SynchronizationService
                 }
 
                 break;
+            
+            case DomainEntityType.Task:
+                var task = await DomainService.GetTaskByID(context, entityID);
+                var taskResponse = await apiClient.GetTask(task.RemoteID!.Value);
+
+                change = new(userID, DomainEntityType.Task, entityID, null, null, null, null, null, false);
+                anyChanged = false;
+
+                if (task.Name != taskResponse.Name)
+                {
+                    change.Name = taskResponse.Name;
+                    anyChanged = true;
+                }
+
+                if (task.Description != taskResponse.Description)
+                {
+                    change.Description = taskResponse.Description;
+                    anyChanged = true;
+                }
+
+                if (task.Status != taskResponse.Status)
+                {
+                    change.Status = taskResponse.Status switch
+                    {
+                        TaskItemStatus.Todo => DomainEntityStatus.Todo,
+                        TaskItemStatus.InProgress => DomainEntityStatus.InProgress,
+                        TaskItemStatus.OnHold => DomainEntityStatus.OnHold,
+                        TaskItemStatus.Blocked => DomainEntityStatus.Blocked,
+                        TaskItemStatus.Completed => DomainEntityStatus.Completed,
+                        _ => DomainEntityStatus.Todo,
+                    };
+
+                    anyChanged = true;
+                }
+
+                if (task.Priority != taskResponse.Priority)
+                {
+                    change.Priority = taskResponse.Priority;
+                    anyChanged = true;
+                }
+
+                if (task.DueDate != taskResponse.DueDate)
+                {
+                    change.DueDate = taskResponse.DueDate;
+                    change.DueDateChanged = true;
+                    anyChanged = true;
+                }
+
+                if (anyChanged)
+                {
+                    await DomainService.ApplyChange(context, change);
+                    
+                    while (task.Version < taskResponse.Version)
+                    {
+                        task.IncreaseVersion();
+                    }
+                }
+
+                break;
+            
+            case DomainEntityType.Tag:
+                var tag = await DomainService.GetProjectByID(context, entityID);
+                var tagResponse = await apiClient.GetTag(tag.RemoteID!.Value);
+
+                change = new(userID, DomainEntityType.Project, entityID, null, null, null, null, null, false);
+                anyChanged = false;
+
+                if (tag.Name != tagResponse.Name)
+                {
+                    change.Name = tagResponse.Name;
+                    anyChanged = true;
+                }
+
+                if (anyChanged)
+                {
+                    await DomainService.ApplyChange(context, change);
+                    
+                    while (tag.Version < tagResponse.Version)
+                    {
+                        tag.IncreaseVersion();
+                    }
+                }
+
+                break;
 
             default:
                 throw new InvalidOperationException("Unexpected entity type.");

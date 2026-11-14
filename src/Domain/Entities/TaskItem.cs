@@ -5,7 +5,7 @@ namespace Domain.Entities;
 public class TaskItem
 {
     public int? ID {get; private set;}
-    public int? RemoteID {get; private set;}
+    public int? RemoteID {get; set;}
     public int ProjectID {get; private set;}
     public string Name {get; set;} = null!;
     public string Description {get; set;} = null!;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Infrastructure.Database;
 using Services;
@@ -6,16 +7,16 @@ using BFPM.CLI.Pages;
 
 namespace BFPM.CLI.Commands;
 
-public class EditFolderCommand : ICommand
+public class EnterFolderCommand : ICommand
 {
     public int FolderID {get; private set;}
 
-    public EditFolderCommand(int folderID)
+    public EnterFolderCommand(int folderID)
     {
         FolderID = folderID;
     }
 
-    private EditFolderCommand()
+    private EnterFolderCommand()
     {
         
     }
@@ -31,17 +32,12 @@ public class EditFolderCommand : ICommand
                 throw new Services.Exceptions.UnauthorizedAccessException();
             }
 
-            var localChange = await FolderEditPage.Run(context, currentUser.ID, FolderID);
+            List<string> logs = await FolderPage.Run(context, FolderID);
 
-            if (localChange is null)
+            foreach (var log in logs)
             {
-                return;
+                Console.WriteLine(log);
             }
-
-            await DomainService.ApplyChange(context, localChange);
-            await context.SaveChangesAsync();
-
-            Console.WriteLine($"Folder {FolderID} changed\nName: {localChange.Name}, Description: {localChange.Description}");
         }
     }
 }

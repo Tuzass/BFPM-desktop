@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Infrastructure.Database;
 using Services;
@@ -7,16 +8,18 @@ using BFPM.CLI.Pages;
 
 namespace BFPM.CLI.Commands;
 
-public class EditTagCommand : ICommand
+public class EnterTagCommand : ICommand
 {
+    private readonly ApiClient _apiClient = null!;
     public int TagID {get; private set;}
 
-    public EditTagCommand(int tagID)
+    public EnterTagCommand(ApiClient apiClient, int tagID)
     {
+        _apiClient = apiClient;
         TagID = tagID;
     }
 
-    private EditTagCommand()
+    private EnterTagCommand()
     {
         
     }
@@ -34,22 +37,22 @@ public class EditTagCommand : ICommand
                 throw new Services.Exceptions.UnauthorizedAccessException();
             }
 
-            if (!await DomainService.IsProjectLocal(context, tag.ProjectID))
+            List<string> logs = [];
+
+            if (await DomainService.IsProjectLocal(context, tag.ProjectID))
             {
-                throw new NonlocalProjectException();
+                logs = await LocalTagPage.Run(context, TagID);
             }
 
-            var localChange = await TagEditPage.Run(context, TagID);
-
-            if (localChange is null)
+            else
             {
-                return;
+                logs = await RemoteTagPage.Run(context, _apiClient, TagID);
             }
 
-            await DomainService.ApplyChange(context, localChange);
-            await context.SaveChangesAsync();
-
-            Console.WriteLine($"Tag {TagID} changed\nName: {localChange.Name}");
+            foreach (var log in logs)
+            {
+                Console.WriteLine(log);
+            }
         }
     }
 }

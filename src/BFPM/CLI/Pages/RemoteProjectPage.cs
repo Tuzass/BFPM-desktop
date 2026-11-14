@@ -245,8 +245,8 @@ Left/Right | Moves cursor");
         int fieldsFirstRow = 3;
         int mainOptionsFirstRow = 14;
         int confirmationMessageRow = 14;
-        int errorMessageRow = 21;
         int keyInstructionsFirstRow = 14;
+        int errorMessageRow = 21;
 
         List<string> fieldNames = ["Name", "Description", "Status"];
         List<string> originalFieldContents = [project.Name, project.Description, ProjectStatusToString(project.Status)];
@@ -334,12 +334,6 @@ Left/Right | Moves cursor");
                                 continue;
                             }
 
-                            logs.Add($"Current user ID: {currentUser.ID}");
-                            logs.Add($"Project ID: {project.ID}");
-                            logs.Add($"Project owner ID: {project.OwnerID}");
-                            logs.Add($"Project name: {project.Name}");
-                            logs.Add($"Proposed name: {fieldContents[0].Trim()}");
-
                             if (await DomainService.IsProjectNameDuplicate(context, currentUser.ID, fieldContents[0].Trim(), projectID))
                             {
                                 PrintErrorMessage(errorMessageRow, $"Current user already has a project named '{fieldContents[0].Trim()}' (case-insensitive)!");
@@ -410,7 +404,7 @@ Left/Right | Moves cursor");
                                     await context.SaveChangesAsync();
 
                                     PrintErrorMessage(errorMessageRow, "Changes were saved. Select 'Commit changes' to submit them to the remote project.");
-                                    logs.Add("Changes were saved.");
+                                    logs.Add("Changes were saved locally.");
 
                                     shouldExit = true;
                                     break;
@@ -540,7 +534,7 @@ Left/Right | Moves cursor");
                 {   
                     var result = await SynchronizationService.CommitChanges(context, apiClient,
                                                                             currentUser.ID,
-                                                                            projectID,
+                                                                            project.RemoteID!.Value,
                                                                             ActionType.ChangeAttribute,
                                                                             DomainEntityType.Project,
                                                                             projectID,
@@ -558,11 +552,13 @@ Left/Right | Moves cursor");
 
                         ClearErrorMessage(errorMessageRow);
                         PrintErrorMessage(errorMessageRow, "Changes were successfully commited to remote project! Changes were also applied successfully to the associated local project! Other entities may have been affected, so make sure to perform synchronization.");
+                        logs.Add("Changes were successfully commited to remote project! Changes were also applied successfully to the associated local project! Other entities may have been affected, so make sure to perform synchronization.");
                     }
 
                     else
                     {
                         PrintErrorMessage(errorMessageRow, "Changes were rejected by the server! Please perform synchronization on the entire project before submitting your changes again!");
+                        logs.Add("Changes were rejected by the server! Please perform synchronization on the entire project before submitting your changes again!");
                     }
                 }
 
@@ -571,6 +567,7 @@ Left/Right | Moves cursor");
                     await SynchronizationService.PullChanges(context, apiClient, currentUser.ID, DomainEntityType.Project, projectID);
                     await context.SaveChangesAsync();
                     PrintErrorMessage(errorMessageRow, "Changes were successfully pulled!");
+                    logs.Add("Changes were successfully pulled!");
                 }
 
                 if (optionIndex == optionCount - 2) // create copy

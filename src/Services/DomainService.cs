@@ -35,7 +35,7 @@ public static class DomainService
             .AnyAsync(p => p.ID == projectID && p.AssignedUserID == userID);
     }
 
-    public static async Task<bool> IsFolderDuplicate(AppDbContext context, int ownerID, string folderName, int? folderID = null)
+    public static async Task<bool> IsFolderNameDuplicate(AppDbContext context, int ownerID, string folderName, int? folderID = null)
     {
         return await context.Folders
             .AnyAsync(f => f.ID != folderID && f.OwnerID == ownerID && f.Name == folderName);
@@ -53,13 +53,13 @@ public static class DomainService
                 .AnyAsync(p => p.ID != projectID && !p.RemoteID.HasValue && p.OwnerID == ownerID && p.Name == projectName);
     }
 
-    public static async Task<bool> IsTaskDuplicate(AppDbContext context, int projectID, string taskName, int? taskID = null)
+    public static async Task<bool> IsTaskNameDuplicate(AppDbContext context, int projectID, string taskName, int? taskID = null)
     {
         return await context.Tasks
             .AnyAsync(t => t.ID != taskID && t.ProjectID == projectID && t.Name == taskName);
     }
 
-    public static async Task<bool> IsTagDuplicate(AppDbContext context, int projectID, string tagName, int? tagID = null)
+    public static async Task<bool> IsTagNameDuplicate(AppDbContext context, int projectID, string tagName, int? tagID = null)
     {
         return await context.Tags
             .AnyAsync(t => t.ID != tagID && t.ProjectID == projectID && t.Name == tagName);
