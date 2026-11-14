@@ -23,7 +23,6 @@ Type 'help' to see the available commands";
 
         ApiClient apiClient = new(httpClient);
         Console.WriteLine(StartMessage);
-        int? currentUserID = null;
 
         try
         {
@@ -31,8 +30,6 @@ Type 'help' to see the available commands";
 
             if (currentUser.ID != 0)
             {
-                currentUserID = currentUser.ID;
-                
                 if (!await apiClient.LoginWithPersistentToken(currentUser.ID))
                 {
                     Console.WriteLine("Login failed. Please select another user before performing any operations.");
@@ -76,7 +73,6 @@ Type 'help' to see the available commands";
                     break;
                 
                 case ServerUnavailableException:
-                    await apiClient.SetCurrentUserID(currentUserID!.Value);
                     var currentUser = await UserService.GetCurrentUser();
                     Console.WriteLine($"Currently logged in as: {currentUser.Username}");
                     Console.WriteLine("The server is currently unavailable.");
