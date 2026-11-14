@@ -294,7 +294,7 @@ public class ApiClient
             {
                 case ServerUnavailableException:
                 case HttpRequestException:
-                    throw;
+                    throw new ServerUnavailableException();
                 
                 default:
                     await _tokenStore.ClearTokens();
@@ -304,7 +304,7 @@ public class ApiClient
         }
     }
 
-    public async Task SetCurrentUserID(int? userID, CancellationToken ct = default)
+    private async Task SetCurrentUserID(int? userID, CancellationToken ct = default)
     {
         _currentUserID = userID;
         await UserService.SwitchCurrentUser(_currentUserID);
