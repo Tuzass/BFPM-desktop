@@ -207,7 +207,7 @@ Left/Right | Move cursor within field");
         }
 
         int minCursorHorizontalPosition = longestFieldLength + 2;
-        List<string> optionNames = ["Edit fields", "Commit changes", "Pull changes", "Exit"];
+        List<string> optionNames = ["Edit fields", "Commit changes", "Exit"];
         int optionCount = optionNames.Count;
         int optionIndex = 0;
         int cursorIndex;
@@ -475,22 +475,15 @@ Left/Right | Move cursor within field");
                         await context.SaveChangesAsync();
 
                         ClearErrorMessage(errorMessageRow);
-                        PrintErrorMessage(errorMessageRow, "Changes were successfully commited to remote tag! Changes were also applied successfully to the associated local tag! Other entities may have been affected, so make sure to perform synchronization.");
-                        logs.Add("Changes were successfully commited to remote tag! Changes were also applied successfully to the associated local tag! Other entities may have been affected, so make sure to perform synchronization.");
+                        PrintErrorMessage(errorMessageRow, "Changes were successfully commited to remote tag! Changes were also applied successfully to the associated local tag! Other entities may have been affected, so make sure to perform synchronization in the corresponding project's page.");
+                        logs.Add("Changes were successfully commited to remote tag! Changes were also applied successfully to the associated local tag! Other entities may have been affected, so make sure to perform synchronization in the corresponding project's page.");
                     }
 
                     else
                     {
-                        PrintErrorMessage(errorMessageRow, "Changes were rejected by the server! Please perform synchronization on the entire project before submitting your changes again!");
-                        logs.Add("Changes were rejected by the server! Please perform synchronization on the entire project before submitting your changes again!");
+                        PrintErrorMessage(errorMessageRow, "Changes were rejected by the server! Please perform synchronization on the corresponding project before submitting your changes again!");
+                        logs.Add("Changes were rejected by the server! Please perform synchronization on the corresponding project before submitting your changes again!");
                     }
-                }
-
-                if (optionIndex == 2) // pull changes
-                {
-                    await SynchronizationService.PullChanges(context, apiClient, currentUser.ID, DomainEntityType.Tag, tagID);
-                    await context.SaveChangesAsync();
-                    PrintErrorMessage(errorMessageRow, "Changes were successfully pulled!");
                 }
 
                 if (optionIndex == optionCount - 1) // exit

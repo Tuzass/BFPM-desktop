@@ -97,6 +97,9 @@ public class Parser
             throw new UnexpectedTokenException();
         }
 
+        // TODO: assign user {id} project {id}
+        // TODO: assign user {id} task {id}
+
         if (tokens[0].Type == TokenType.Project
          && tokens[1].Type == TokenType.Integer
          && tokens[2].Type == TokenType.Folder
@@ -427,6 +430,9 @@ public class Parser
         {
             throw new UnexpectedTokenException();
         }
+
+        // TODO: remove user {id} project {id}
+        // TODO: remove user {id} task {id}
 
         if (tokens[0].Type == TokenType.Project
          && tokens[1].Type == TokenType.Integer

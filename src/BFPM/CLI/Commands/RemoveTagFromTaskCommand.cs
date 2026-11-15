@@ -44,7 +44,7 @@ public class RemoveTagFromTaskCommand : ICommand
 
             if (!await DomainService.IsProjectLocal(context, task.ProjectID))
             {
-                throw new NonlocalProjectException();
+                // TODO
             }
 
             await DomainService.RemoveTagFromTask(context, TaskID, TagID);

@@ -564,8 +564,7 @@ Left/Right | Moves cursor");
 
                 if (optionIndex == 2) // pull changes
                 {
-                    await SynchronizationService.PullChanges(context, apiClient, currentUser.ID, DomainEntityType.Project, projectID);
-                    await context.SaveChangesAsync();
+                    await SynchronizationService.PullChanges(context, apiClient, currentUser.ID, projectID);
                     PrintErrorMessage(errorMessageRow, "Changes were successfully pulled!");
                     logs.Add("Changes were successfully pulled!");
                 }

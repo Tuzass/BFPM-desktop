@@ -412,8 +412,7 @@ public static class DomainService
 
     public static async Task CreateTask(AppDbContext context, int projectID, string taskName, string taskDescription, TaskItemStatus taskStatus, TaskItemPriority taskPriority, DateTime? taskDueDate)
     {
-        var isDuplicate = await context.Tasks
-            .AnyAsync(t => t.ProjectID == projectID && t.Name == taskName);
+        var isDuplicate = await IsTaskNameDuplicate(context, projectID, taskName);
         
         if (isDuplicate)
         {
@@ -422,6 +421,20 @@ public static class DomainService
 
         TaskItem newTask = new(null, projectID, taskName, taskDescription, taskStatus, taskPriority, taskDueDate, null, null);
         context.Tasks.Add(newTask);
+    }
+
+    public static async Task<TaskItem> CreateTaskFromRemote(AppDbContext context, int projectID, TaskResponse remoteTask)
+    {
+        var isDuplicate = await IsTaskNameDuplicate(context, projectID, remoteTask.Name);
+        
+        if (isDuplicate)
+        {
+            throw new DuplicateTaskException();
+        }
+
+        TaskItem newTask = new(remoteTask.ID, projectID, remoteTask.Name, remoteTask.Description, remoteTask.Status, remoteTask.Priority, remoteTask.DueDate, remoteTask.CreatedAt, remoteTask.CompletedAt);
+        context.Tasks.Add(newTask);
+        return newTask;
     }
 
     public static async Task CreateTag(AppDbContext context, int projectID, string tagName)
@@ -436,6 +449,20 @@ public static class DomainService
 
         Tag newTag = new(null, projectID, tagName);
         context.Tags.Add(newTag);
+    }
+
+    public static async Task<Tag> CreateTagFromRemote(AppDbContext context, int projectID, TagResponse remoteTag)
+    {
+        var isDuplicate = await IsTagNameDuplicate(context, projectID, remoteTag.Name);
+        
+        if (isDuplicate)
+        {
+            throw new DuplicateTagException();
+        }
+
+        Tag newTag = new(remoteTag.ID, projectID, remoteTag.Name);
+        context.Tags.Add(newTag);
+        return newTag;
     }
 
     public static async Task AssignProjectToFolder(AppDbContext context, int folderID, int projectID)

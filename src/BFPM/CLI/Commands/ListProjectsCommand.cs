@@ -26,7 +26,7 @@ public class ListProjectsCommand : ICommand
                 return;
             }
 
-            Console.WriteLine("ID | Project Name");
+            Console.WriteLine("ID | Project Name"); // TODO: make it less ugly
             foreach (var project in projects)
             {
                 Console.WriteLine($"{project.ID} | {project.Name}");

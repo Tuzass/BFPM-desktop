@@ -44,7 +44,7 @@ public class AssignTagToTaskCommand : ICommand
 
             if (!await DomainService.IsProjectLocal(context, task.ProjectID))
             {
-                throw new NonlocalProjectException();
+                // TODO
             }
 
             await DomainService.AssignTagToTask(context, TaskID, TagID);

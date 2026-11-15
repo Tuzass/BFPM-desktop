@@ -30,6 +30,117 @@ public static class SynchronizationService
         return entityVersions;
     }
 
+    private static async Task<Change?> GetProjectChanges(int userID, Project localProject, FullProjectResponse remoteProject)
+    {
+        Change change = new(userID, DomainEntityType.Project, localProject.ID!.Value, null, null, null, null, null, false);
+        bool anyChanged = false;
+
+        if (localProject.Name != remoteProject.Name)
+        {
+            change.Name = remoteProject.Name;
+            anyChanged = true;
+        }
+
+        if (localProject.Description != remoteProject.Description)
+        {
+            change.Description = remoteProject.Description;
+            anyChanged = true;
+        }
+
+        if (localProject.Status != remoteProject.Status)
+        {
+            change.Status = remoteProject.Status switch
+            {
+                ProjectStatus.Active => DomainEntityStatus.Active,
+                ProjectStatus.OnHold => DomainEntityStatus.OnHold,
+                ProjectStatus.Archived => DomainEntityStatus.Archived,
+                ProjectStatus.Completed => DomainEntityStatus.Completed,
+                _ => DomainEntityStatus.Active,
+            };
+
+            anyChanged = true;
+        }
+
+        if (!anyChanged)
+        {
+            return null;
+        }
+
+        return change;
+    }
+
+    private static async Task<Change?> GetTaskChanges(int userID, TaskItem localTask, TaskResponse remoteTask)
+    {
+        Change change = new(userID, DomainEntityType.Task, localTask.ID!.Value, null, null, null, null, null, false);
+        bool anyChanged = false;
+
+        if (localTask.Name != remoteTask.Name)
+        {
+            change.Name = remoteTask.Name;
+            anyChanged = true;
+        }
+
+        if (localTask.Description != remoteTask.Description)
+        {
+            change.Description = remoteTask.Description;
+            anyChanged = true;
+        }
+
+        if (localTask.Status != remoteTask.Status)
+        {
+            change.Status = remoteTask.Status switch
+            {
+                TaskItemStatus.Todo => DomainEntityStatus.Todo,
+                TaskItemStatus.InProgress => DomainEntityStatus.InProgress,
+                TaskItemStatus.OnHold => DomainEntityStatus.OnHold,
+                TaskItemStatus.Blocked => DomainEntityStatus.Blocked,
+                TaskItemStatus.Completed => DomainEntityStatus.Completed,
+                _ => DomainEntityStatus.Todo,
+            };
+
+            anyChanged = true;
+        }
+
+        if (localTask.Priority != remoteTask.Priority)
+        {
+            change.Priority = remoteTask.Priority;
+            anyChanged = true;
+        }
+
+        if (localTask.DueDate != remoteTask.DueDate)
+        {
+            change.DueDate = remoteTask.DueDate;
+            change.DueDateChanged = true;
+            anyChanged = true;
+        }
+
+        if (!anyChanged)
+        {
+            return null;
+        }
+
+        return change;
+    }
+
+    private static async Task<Change?> GetTagChanges(int userID, Tag localTag, TagResponse remoteTag)
+    {
+        Change change = new(userID, DomainEntityType.Tag, localTag.ID!.Value, null, null, null, null, null, false);
+        bool anyChanged = false;
+
+        if (localTag.Name != remoteTag.Name)
+        {
+            change.Name = remoteTag.Name;
+            anyChanged = true;
+        }
+
+        if (!anyChanged)
+        {
+            return null;
+        }
+
+        return change;
+    }
+
     public static async Task<bool> CommitChanges(AppDbContext context, ApiClient apiClient, int userID, int projectID, ActionType actionType, DomainEntityType targetType, int targetID, DomainEntityType? relatedEntityType, int? relatedEntityID, Change change)
     {
         var affectedEntitiesResponse = await apiClient.CreateAction(userID,
@@ -67,141 +178,136 @@ public static class SynchronizationService
         };
     }
 
-    public static async Task PullChanges(AppDbContext context, ApiClient apiClient, int userID, DomainEntityType entityType, int entityID)
+    public static async Task PullChanges(AppDbContext context, ApiClient apiClient, int userID, int projectID)
     {
-        switch (entityType)
-        {
-            case DomainEntityType.Project:
-                var project = await DomainService.GetProjectByID(context, entityID);
-                var projectResponse = await apiClient.GetProject(project.RemoteID!.Value);
+        var project = await DomainService.GetProjectByID(context, projectID);
+        var projectResponse = await apiClient.GetProject(project.RemoteID!.Value);
 
-                Change change = new(userID, DomainEntityType.Project, entityID, null, null, null, null, null, false);
-                bool anyChanged = false;
+        using (var transaction = await context.Database.BeginTransactionAsync())
+        {    
+            try
+            {
+                var localTasks = await DomainService.GetTasksByProject(context, projectID);
+                var localTags = await DomainService.GetTagsByProject(context, projectID);
+                var localTaskTagLinks = await DomainService.GetTaskTagLinksByProject(context, projectID);
 
-                if (project.Name != projectResponse.Name)
-                {
-                    change.Name = projectResponse.Name;
-                    anyChanged = true;
-                }
+                var change = await GetProjectChanges(userID, project, projectResponse);
 
-                if (project.Description != projectResponse.Description)
-                {
-                    change.Description = projectResponse.Description;
-                    anyChanged = true;
-                }
-
-                if (project.Status != projectResponse.Status)
-                {
-                    change.Status = projectResponse.Status switch
-                    {
-                        ProjectStatus.Active => DomainEntityStatus.Active,
-                        ProjectStatus.OnHold => DomainEntityStatus.OnHold,
-                        ProjectStatus.Archived => DomainEntityStatus.Archived,
-                        ProjectStatus.Completed => DomainEntityStatus.Completed,
-                        _ => DomainEntityStatus.Active,
-                    };
-
-                    anyChanged = true;
-                }
-
-                if (anyChanged)
+                if (change is not null)
                 {
                     await DomainService.ApplyChange(context, change);
-                    
-                    while (project.Version < projectResponse.Version)
+                }
+                
+                while (project.Version < projectResponse.Version)
+                {
+                    project.IncreaseVersion();
+                }
+
+                var tasksByRemoteID = localTasks
+                    .Where(t => t.RemoteID.HasValue)
+                    .ToDictionary(t => t.RemoteID!.Value);
+
+                var tagsByRemoteID = localTags
+                    .Where(t => t.RemoteID.HasValue)
+                    .ToDictionary(t => t.RemoteID!.Value);
+
+                foreach (var remoteTask in projectResponse.Tasks)
+                {
+                    if (!tasksByRemoteID.TryGetValue(remoteTask.ID, out var localTask))
                     {
-                        project.IncreaseVersion();
+                        localTask = await DomainService.CreateTaskFromRemote(context, projectID, remoteTask);
+                        tasksByRemoteID.Add(remoteTask.ID, localTask);
+                    }
+
+                    else
+                    {
+                        change = await GetTaskChanges(userID, localTask, remoteTask);
+
+                        if (change is not null)
+                        {   
+                            await DomainService.ApplyChange(context, change);
+                        }
+
+                        while (localTask.Version < remoteTask.Version)
+                        {
+                            localTask.IncreaseVersion();
+                        }
                     }
                 }
 
-                break;
-            
-            case DomainEntityType.Task:
-                var task = await DomainService.GetTaskByID(context, entityID);
-                var taskResponse = await apiClient.GetTask(task.RemoteID!.Value);
-
-                change = new(userID, DomainEntityType.Task, entityID, null, null, null, null, null, false);
-                anyChanged = false;
-
-                if (task.Name != taskResponse.Name)
+                foreach (var remoteTag in projectResponse.Tags)
                 {
-                    change.Name = taskResponse.Name;
-                    anyChanged = true;
-                }
-
-                if (task.Description != taskResponse.Description)
-                {
-                    change.Description = taskResponse.Description;
-                    anyChanged = true;
-                }
-
-                if (task.Status != taskResponse.Status)
-                {
-                    change.Status = taskResponse.Status switch
+                    if (!tagsByRemoteID.TryGetValue(remoteTag.ID, out var localTag))
                     {
-                        TaskItemStatus.Todo => DomainEntityStatus.Todo,
-                        TaskItemStatus.InProgress => DomainEntityStatus.InProgress,
-                        TaskItemStatus.OnHold => DomainEntityStatus.OnHold,
-                        TaskItemStatus.Blocked => DomainEntityStatus.Blocked,
-                        TaskItemStatus.Completed => DomainEntityStatus.Completed,
-                        _ => DomainEntityStatus.Todo,
-                    };
+                        localTag = await DomainService.CreateTagFromRemote(context, projectID, remoteTag);
+                        tagsByRemoteID.Add(remoteTag.ID, localTag);
+                    }
 
-                    anyChanged = true;
-                }
-
-                if (task.Priority != taskResponse.Priority)
-                {
-                    change.Priority = taskResponse.Priority;
-                    anyChanged = true;
-                }
-
-                if (task.DueDate != taskResponse.DueDate)
-                {
-                    change.DueDate = taskResponse.DueDate;
-                    change.DueDateChanged = true;
-                    anyChanged = true;
-                }
-
-                if (anyChanged)
-                {
-                    await DomainService.ApplyChange(context, change);
-                    
-                    while (task.Version < taskResponse.Version)
+                    else
                     {
-                        task.IncreaseVersion();
+                        change = await GetTagChanges(userID, localTag, remoteTag);
+
+                        if (change is not null)
+                        {   
+                            await DomainService.ApplyChange(context, change);
+                        }
+
+                        while (localTag.Version < remoteTag.Version)
+                        {
+                            localTag.IncreaseVersion();
+                        }
                     }
                 }
 
-                break;
-            
-            case DomainEntityType.Tag:
-                var tag = await DomainService.GetProjectByID(context, entityID);
-                var tagResponse = await apiClient.GetTag(tag.RemoteID!.Value);
+                var remoteTaskIDs = projectResponse.Tasks
+                    .Select(t => t.ID)
+                    .ToHashSet();
 
-                change = new(userID, DomainEntityType.Project, entityID, null, null, null, null, null, false);
-                anyChanged = false;
+                var remoteTagIDs = projectResponse.Tags
+                    .Select(t => t.ID)
+                    .ToHashSet();
 
-                if (tag.Name != tagResponse.Name)
-                {
-                    change.Name = tagResponse.Name;
-                    anyChanged = true;
+                var orphanTasks = localTasks
+                    .Where(t => t.RemoteID.HasValue && !remoteTaskIDs.Contains(t.RemoteID.Value))
+                    .ToList();
+
+                var orphanTags = localTags
+                    .Where(t => t.RemoteID.HasValue && !remoteTagIDs.Contains(t.RemoteID.Value))
+                    .ToList();
+
+                foreach (var task in orphanTasks)
+                {   
+                    await DomainService.DeleteTask(context, task.ID!.Value);
                 }
 
-                if (anyChanged)
+                foreach (var tag in orphanTags)
+                {   
+                    await DomainService.DeleteTag(context, tag.ID!.Value);
+                }
+                
+                foreach (var link in localTaskTagLinks)
                 {
-                    await DomainService.ApplyChange(context, change);
-                    
-                    while (tag.Version < tagResponse.Version)
-                    {
-                        tag.IncreaseVersion();
-                    }
+                    context.TaskTagLinks.Remove(link);
                 }
 
-                break;
+                await context.SaveChangesAsync();
 
-            default:
-                throw new InvalidOperationException("Unexpected entity type.");
+                foreach (var link in projectResponse.TaskTagLinks)
+                {
+                    var task = tasksByRemoteID[link.TaskID];
+                    var tag = tagsByRemoteID[link.TagID];
+                    context.TaskTagLinks.Add(new(task.ID!.Value, tag.ID!.Value));
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
     }
 
